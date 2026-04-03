@@ -8,7 +8,8 @@ partial class MainForm
     private Button btnSelectFolder;
     private Button btnRun;
     private ProgressBar progressBar;
-    private Label lblSpecInfo;
+    private Label lblSpecLine1;
+    private Label lblSpecLine2;
 
     private Panel midPanel;
     private Label lblMonitor;
@@ -29,7 +30,8 @@ partial class MainForm
         btnSelectFolder = new Button();
         btnRun = new Button();
         progressBar = new ProgressBar();
-        lblSpecInfo = new Label();
+        lblSpecLine1 = new Label();
+        lblSpecLine2 = new Label();
 
         midPanel = new Panel();
         lblMonitor = new Label();
@@ -48,7 +50,7 @@ partial class MainForm
 
         // ── topPanel ──
         topPanel.Dock = DockStyle.Top;
-        topPanel.Height = 40;
+        topPanel.Height = 80;
         topPanel.Padding = new Padding(5, 5, 5, 5);
 
         lblFolder.Text = "フォルダ:";
@@ -69,17 +71,21 @@ partial class MainForm
         progressBar.Location = new Point(533, 10);
         progressBar.Size = new Size(80, 22);
 
-        lblSpecInfo.AutoSize = true;
-        lblSpecInfo.Location = new Point(620, 12);
-        lblSpecInfo.ForeColor = Color.DimGray;
-        lblSpecInfo.Font = new Font(Font.FontFamily, 8f);
+        lblSpecLine1.Location = new Point(8, 30);
+        lblSpecLine1.AutoSize = true;
+        lblSpecLine1.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
+
+        lblSpecLine2.Location = new Point(8, 52);
+        lblSpecLine2.AutoSize = true;
+        lblSpecLine2.Font = new Font(Font.FontFamily, 8.5f);
 
         topPanel.Controls.Add(lblFolder);
         topPanel.Controls.Add(txtFolderPath);
         topPanel.Controls.Add(btnSelectFolder);
         topPanel.Controls.Add(btnRun);
         topPanel.Controls.Add(progressBar);
-        topPanel.Controls.Add(lblSpecInfo);
+        topPanel.Controls.Add(lblSpecLine1);
+        topPanel.Controls.Add(lblSpecLine2);
 
         // ── midPanel ──
         midPanel.Dock = DockStyle.Top;

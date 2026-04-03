@@ -67,13 +67,11 @@ public partial class MainForm : Form
         var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "PhotoBOX");
         Text = $"PhotoBOX - {exeName}";
 
-        // 仕様情報ラベル（短縮版）
+        // 仕様情報ラベル
         var strategyName = _strategy?.Name ?? "未検出";
         var configName = _configPath != null ? Path.GetFileNameWithoutExtension(_configPath) : "未検出";
-        lblSpecInfo.Text = $"{strategyName} | {configName}";
-
-        // 戦略の詳細説明はステータスバーに表示
-        lblStatus.Text = $"{strategyName}：{_strategy?.Description ?? ""} | {configName}";
+        lblSpecLine1.Text = $"短辺：224px　長辺：元画像比率維持　戦略：{strategyName}";
+        lblSpecLine2.Text = $"{_strategy?.Description ?? ""}　|　分類：{configName}";
 
         // 起動時の前提条件チェック
         if (!File.Exists(_modelPath))
