@@ -113,9 +113,9 @@ class Program
             ? File.GetLastWriteTime(exePath).ToString("yyyy-MM-dd HH:mm")
             : "不明";
 
-        Console.WriteLine("╔══════════════════════════════════╗");
-        Console.WriteLine("║      PhotoBOX コアテスト         ║");
-        Console.WriteLine("╚══════════════════════════════════╝");
+        Console.WriteLine("====================================");
+        Console.WriteLine("      PhotoBOX Core Test            ");
+        Console.WriteLine("====================================");
         Console.WriteLine();
         Console.WriteLine($"  バージョン     : {version}");
         Console.WriteLine($"  ビルド日時     : {buildDate}");
@@ -127,7 +127,7 @@ class Program
         Console.WriteLine($"  画像フォルダ   : {testDataDir}");
         Console.WriteLine($"  出力フォルダ   : {resultsDir}");
         Console.WriteLine();
-        Console.WriteLine(new string('─', 50));
+        Console.WriteLine(new string('-', 50));
         Console.WriteLine();
 
         using var pipeline = new JudgePipeline(modelPath, configPath);
@@ -146,7 +146,7 @@ class Program
         var csvPath = CsvWriter.Write(results, resultsDir, version, buildDate);
 
         Console.WriteLine();
-        Console.WriteLine(new string('─', 50));
+        Console.WriteLine(new string('-', 50));
         Console.WriteLine();
         Console.WriteLine($"  処理完了: {results.Count}枚");
         Console.WriteLine($"  CSV出力 : {csvPath}");

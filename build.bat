@@ -28,6 +28,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Copying testdata...
+if exist "testdata" (
+    xcopy /s /e /i /y "testdata" "%PUBLISH_DIR%\testdata"
+) else (
+    echo WARNING: testdata folder not found. Skipping.
+)
+echo Copying Models...
+if not exist "%PUBLISH_DIR%\Models\mobilenetv2-7.onnx" (
+    if exist "PhotoJudge\Models\mobilenetv2-7.onnx" (
+        if not exist "%PUBLISH_DIR%\Models" mkdir "%PUBLISH_DIR%\Models"
+        copy /y "PhotoJudge\Models\mobilenetv2-7.onnx" "%PUBLISH_DIR%\Models\"
+    )
+)
+
 echo [3/3] Installer...
 
 set "ISCC="
