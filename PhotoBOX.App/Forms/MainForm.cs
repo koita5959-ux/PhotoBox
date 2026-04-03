@@ -68,7 +68,8 @@ public partial class MainForm : Form
         // 仕様情報ラベル
         var strategyName = _strategy?.Name ?? "未検出";
         var configName = _configPath != null ? Path.GetFileNameWithoutExtension(_configPath) : "未検出";
-        lblSpecInfo.Text = $"v{_version} | {strategyName} | {configName}";
+        var strategyDesc = _strategy?.Description ?? "";
+        lblSpecInfo.Text = $"{strategyName}：{strategyDesc} | {configName}";
 
         // 起動時の前提条件チェック
         if (!File.Exists(_modelPath))

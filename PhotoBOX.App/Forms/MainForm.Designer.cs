@@ -67,10 +67,10 @@ partial class MainForm
         btnRun.Size = new Size(75, 26);
 
         progressBar.Location = new Point(533, 10);
-        progressBar.Size = new Size(100, 22);
+        progressBar.Size = new Size(80, 22);
 
         lblSpecInfo.AutoSize = true;
-        lblSpecInfo.Location = new Point(640, 12);
+        lblSpecInfo.Location = new Point(620, 12);
         lblSpecInfo.ForeColor = Color.DimGray;
         lblSpecInfo.Font = new Font(Font.FontFamily, 8f);
 
