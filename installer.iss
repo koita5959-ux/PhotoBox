@@ -8,11 +8,11 @@
 #define MyStrategyName "CenterCrop"
 
 [Setup]
-AppId={{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}
+AppId={code:GetAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autodesktop}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=installer
 OutputBaseFilename=PhotoBOX_Setup_v{#MyAppVersion}
@@ -20,15 +20,13 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 DisableDirPage=auto
 DisableProgramGroupPage=auto
+UsePreviousLanguage=no
 
 [Languages]
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 ; パブリッシュ出力からexeをコピー（全モードで配置）
@@ -42,16 +40,15 @@ Source: "publish\testdata\*"; DestDir: "{app}\testdata"; Flags: ignoreversion re
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: IsNotSideInstall
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; Check: IsNotSideInstall
 ; 別バージョン追加インストール用アイコン
 Name: "{group}\{#MyAppName} - {#MyStrategyName} v{#MyAppVersion}"; Filename: "{app}\{#MyAppExeName}"; Check: IsSideInstall
-Name: "{autodesktop}\{#MyAppName} - {#MyStrategyName} v{#MyAppVersion}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; Check: IsSideInstall
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\results"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{cmd}"; Parameters: "/c start """" ""{app}"""; Flags: nowait postinstall skipifsilent runhidden; Description: "インストールフォルダを開く"
 
 [Code]
 const
@@ -64,6 +61,16 @@ var
   ModePage: TWizardPage;
   ModeRadios: array[0..3] of TRadioButton;
   SelectedMode: Integer;
+  SideNamePage: TInputQueryWizardPage;
+
+// ── AppIdの動的生成 ──
+function GetAppId(Param: String): String;
+begin
+  if SelectedMode = MODE_SIDE then
+    Result := '{#MyAppName}_' + SideNamePage.Values[0]
+  else
+    Result := '{{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}';
+end;
 
 // ── Check関数：ファイルコピーの制御 ──
 function IsFullInstall(): Boolean;
@@ -87,6 +94,15 @@ var
   UninstStr: String;
 begin
   Result := '';
+  // まずHKCUを検索（PrivilegesRequired=lowest時）
+  if RegQueryStringValue(HKCU,
+    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
+    'UninstallString', UninstStr) then
+  begin
+    Result := RemoveQuotes(UninstStr);
+    Exit;
+  end;
+  // 見つからなければHKLM（admin時の旧インストール）
   if RegQueryStringValue(HKLM,
     'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
     'UninstallString', UninstStr) then
@@ -98,6 +114,15 @@ var
   Dir: String;
 begin
   Result := '';
+  // まずHKCUを検索
+  if RegQueryStringValue(HKCU,
+    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
+    'InstallLocation', Dir) then
+  begin
+    Result := Dir;
+    Exit;
+  end;
+  // 見つからなければHKLM
   if RegQueryStringValue(HKLM,
     'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
     'InstallLocation', Dir) then
@@ -129,8 +154,8 @@ begin
     DelTree(Dir, True, True, True);
 end;
 
-// ── 全PhotoBOX関連のレジストリキーを列挙して削除 ──
-procedure RemoveAllPhotoBOXInstalls();
+// ── 指定ルートキー配下の全PhotoBOXを検出して削除 ──
+procedure RemovePhotoBOXFromRoot(RootKey: Integer);
 var
   Keys: TArrayOfString;
   I: Integer;
@@ -139,28 +164,36 @@ var
   BasePath: String;
 begin
   BasePath := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';
-  if RegGetSubkeyNames(HKLM, BasePath, Keys) then
+  if RegGetSubkeyNames(RootKey, BasePath, Keys) then
   begin
     for I := 0 to GetArrayLength(Keys) - 1 do
     begin
-      if RegQueryStringValue(HKLM, BasePath + '\' + Keys[I], 'DisplayName', DisplayName) then
+      if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'DisplayName', DisplayName) then
       begin
         if Pos('PhotoBOX', DisplayName) > 0 then
         begin
-          if RegQueryStringValue(HKLM, BasePath + '\' + Keys[I], 'UninstallString', UninstStr) then
+          if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'UninstallString', UninstStr) then
           begin
             UninstStr := RemoveQuotes(UninstStr);
             if FileExists(UninstStr) then
               Exec(UninstStr, '/SILENT /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
           end;
-          if RegQueryStringValue(HKLM, BasePath + '\' + Keys[I], 'InstallLocation', InstDir) then
+          if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'InstallLocation', InstDir) then
             CleanLeftoverDir(InstDir);
         end;
       end;
     end;
   end;
+end;
 
-  // デスクトップショートカット削除
+// ── 全PhotoBOX関連のインストールを検出して削除 ──
+procedure RemoveAllPhotoBOXInstalls();
+begin
+  // HKCUとHKLMの両方を検索
+  RemovePhotoBOXFromRoot(HKCU);
+  RemovePhotoBOXFromRoot(HKLM);
+
+  // デスクトップ上のPhotoBOX関連ショートカット削除
   if FileExists(ExpandConstant('{autodesktop}\{#MyAppName}.lnk')) then
     DeleteFile(ExpandConstant('{autodesktop}\{#MyAppName}.lnk'));
 end;
@@ -177,7 +210,7 @@ begin
 
   ModePage := CreateCustomPage(wpWelcome,
     'インストールモードの選択',
-    '実行するインストールモードを選択してください。');
+    'PhotoBOXはコアテスト用アプリです。判定ルールの検証・強化のため、デスクトップにインストールされます。');
 
   Labels[0] := '全インストール（推奨）';
   Labels[1] := '上書きインストール（EXEのみ更新）';
@@ -211,6 +244,14 @@ begin
 
     Y := Y + 52;
   end;
+
+  // 識別名入力ページ（MODE_SIDE時のみ表示）
+  SideNamePage := CreateInputQueryPage(ModePage.ID,
+    '識別名の入力',
+    '並立インストールの識別名を入力してください。',
+    'この識別名がフォルダ名・ショートカット名に使われます。');
+  SideNamePage.Add('識別名（例: CenterCrop_v1）:', False);
+  SideNamePage.Values[0] := 'CenterCrop_v1.0.0';
 end;
 
 // ── 選択されたモードを取得 ──
@@ -234,6 +275,13 @@ var
 begin
   Result := True;
 
+  // 識別名入力ページの「次へ」でフォルダ名・グループ名を設定
+  if CurPageID = SideNamePage.ID then
+  begin
+    WizardForm.DirEdit.Text := ExpandConstant('{autodesktop}\{#MyAppName}_') + SideNamePage.Values[0];
+    WizardForm.GroupEdit.Text := '{#MyAppName} - ' + SideNamePage.Values[0];
+  end;
+
   if CurPageID = ModePage.ID then
   begin
     SelectedMode := GetSelectedMode();
@@ -253,8 +301,7 @@ begin
 
       MODE_SIDE:
       begin
-        WizardForm.DirEdit.Text := ExpandConstant('{autopf}\{#MyAppName}_{#MyStrategyName}_v{#MyAppVersion}');
-        WizardForm.GroupEdit.Text := '{#MyAppName} - {#MyStrategyName} v{#MyAppVersion}';
+        // 識別名入力ページの「次へ」で反映
       end;
 
       MODE_REMOVE:
@@ -278,6 +325,10 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
+
+  // 識別名入力ページはMODE_SIDE以外ではスキップ
+  if (PageID = SideNamePage.ID) and (SelectedMode <> MODE_SIDE) then
+    Result := True;
 
   // 上書きインストール・全インストール時はフォルダ選択をスキップ
   if (PageID = wpSelectDir) and (SelectedMode <> MODE_SIDE) then
