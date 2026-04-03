@@ -1,0 +1,9 @@
+bin/
+obj/
+results/*.csv
+installer/*.exe
+*.user
+*.suo
+.vs/
+publish/
+*.iss~

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhotoJudge\PhotoJudge.csproj" />
+  </ItemGroup>
+
+  <!-- ONNXモデル: PhotoJudge/Models/ → 出力の Models/ -->
+  <ItemGroup Condition="Exists('..\PhotoJudge\Models\mobilenetv2-7.onnx')">
+    <None Include="..\PhotoJudge\Models\mobilenetv2-7.onnx"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="Models\mobilenetv2-7.onnx" />
+  </ItemGroup>
+
+  <!-- カテゴリ設定: PhotoJudge/Config/ → 出力の Config/ -->
+  <ItemGroup>
+    <None Include="..\PhotoJudge\Config\**\*.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="Config\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- テストデータ: testdata/ → 出力の testdata/ -->
+  <ItemGroup>
+    <None Include="..\testdata\**\*"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="testdata\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

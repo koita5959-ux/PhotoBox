@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.16.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
+  </ItemGroup>
+
+  <!-- ONNXモデル: ファイルが存在する場合のみコピー -->
+  <ItemGroup Condition="Exists('Models\mobilenetv2-7.onnx')">
+    <None Include="Models\mobilenetv2-7.onnx"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- カテゴリ設定ファイル: Config/ 以下の全JSONをコピー -->
+  <ItemGroup>
+    <None Include="Config\**\*.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="Config\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
