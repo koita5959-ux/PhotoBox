@@ -21,6 +21,8 @@ class Program
         {
             Console.WriteLine($"エラー: ONNXモデルが見つかりません: {modelPath}");
             Console.WriteLine("Models/mobilenetv2-7.onnx を配置してください。");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -28,6 +30,8 @@ class Program
         {
             Console.WriteLine($"エラー: テストデータフォルダが見つかりません: {testDataDir}");
             Console.WriteLine("testdata/ に画像ファイルを配置してください。");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -40,6 +44,8 @@ class Program
         {
             Console.WriteLine($"エラー: カテゴリ設定ファイルが見つかりません: {configDir}");
             Console.WriteLine("Config/ に設定JSONを配置してください。");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -49,6 +55,8 @@ class Program
         {
             Console.WriteLine("エラー: 利用可能な戦略が見つかりません。");
             Console.WriteLine("PhotoJudge/Strategies/ に ICropStrategy 実装クラスを配置してください。");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -74,6 +82,8 @@ class Program
             Console.WriteLine("利用可能な戦略:");
             foreach (var s in strategies)
                 Console.WriteLine($"  - {s.Name}: {s.Description}");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -89,6 +99,8 @@ class Program
             Console.WriteLine("利用可能なカテゴリ設定:");
             foreach (var f in configFiles)
                 Console.WriteLine($"  - {Path.GetFileNameWithoutExtension(f)}");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -126,6 +138,8 @@ class Program
         if (results.Count == 0)
         {
             Console.WriteLine("処理結果が0件です。testdata/ に画像ファイルを配置してください。");
+            Console.WriteLine("何かキーを押すと終了します...");
+            Console.ReadKey();
             return 1;
         }
 
@@ -147,6 +161,10 @@ class Program
             Console.WriteLine(line);
 
         Console.WriteLine();
+
+        Console.WriteLine();
+        Console.WriteLine("何かキーを押すと終了します...");
+        Console.ReadKey();
 
         return 0;
     }

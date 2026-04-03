@@ -31,7 +31,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; パブリッシュ出力からexeをコピー
 Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; ONNXモデル
-Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: DirExists(ExpandConstant('{src}\publish\Models'))
+Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; カテゴリ設定
 Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; テストデータ
