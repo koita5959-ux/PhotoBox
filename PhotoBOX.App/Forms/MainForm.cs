@@ -70,8 +70,10 @@ public partial class MainForm : Form
         // 仕様情報ラベル
         var strategyName = _strategy?.Name ?? "未検出";
         var configName = _configPath != null ? Path.GetFileNameWithoutExtension(_configPath) : "未検出";
-        lblSpecLine1.Text = $"短辺：224px　長辺：元画像比率維持　戦略：{strategyName}";
-        lblSpecLine2.Text = $"{_strategy?.Description ?? ""}　|　分類：{configName}";
+        lblSpecTitle.Text = strategyName;
+        lblSpecParams.Text = "短辺：224px　長辺：元画像比率維持";
+        lblSpecDesc.Text = _strategy?.Description ?? "";
+        lblSpecCategory.Text = $"分類：{configName}";
 
         // 起動時の前提条件チェック
         if (!File.Exists(_modelPath))
@@ -155,7 +157,8 @@ public partial class MainForm : Form
         progressBar.Minimum = 0;
         progressBar.Maximum = imageFiles.Length;
         progressBar.Value = 0;
-        lblNgCount.Text = $"NG: 0/0枚";
+        lblProgress.Text = $"0 / {imageFiles.Length} 枚";
+        lblNgCount.Text = "NG: 0/0枚";
         lblStatus.Text = "判定中...";
 
         var strategy = _strategy;
@@ -185,12 +188,14 @@ public partial class MainForm : Form
                     photoGrid.Controls.Add(card);
 
                     progressBar.Value = i + 1;
+                    lblProgress.Text = $"{i + 1} / {imageFiles.Length} 枚";
                     lblStatus.Text = $"判定中: {i + 1}/{imageFiles.Length}枚 - {result.FileName}";
                 });
             }
         });
 
         lblStatus.Text = $"判定完了: {_results.Count}枚";
+        lblProgress.Text = $"{_results.Count} / {_results.Count} 枚";
         lblNgCount.Text = $"NG: 0/{_results.Count}枚";
         btnRun.Enabled = true;
         btnExportCsv.Enabled = true;
