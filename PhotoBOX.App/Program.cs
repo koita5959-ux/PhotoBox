@@ -15,7 +15,7 @@ class Program
         var modelPath = Path.Combine(baseDir, "Models", "mobilenetv2-7.onnx");
         var configDir = Path.Combine(baseDir, "Config");
         var testDataDir = Path.Combine(baseDir, "testdata");
-        var resultsDir = Path.Combine(baseDir, "results");
+        var resultsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PhotoBOX", "results");
 
         if (!File.Exists(modelPath))
         {
