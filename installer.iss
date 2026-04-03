@@ -35,8 +35,6 @@ Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
 ; カテゴリ設定（上書きモード時はスキップ）
 Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
-; テストデータ（上書きモード時はスキップ）
-Source: "publish\testdata\*"; DestDir: "{app}\testdata"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: IsNotSideInstall
