@@ -34,10 +34,8 @@ public partial class MainForm : Form
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "PhotoBOX", "results");
 
-        // デフォルトフォルダ
-        var testDataDir = Path.Combine(_baseDir, "testdata");
-        if (Directory.Exists(testDataDir))
-            txtFolderPath.Text = testDataDir;
+        // フォルダパスは空欄（判定実行時にダイアログで選択）
+        txtFolderPath.Text = "";
 
         // イベント
         btnSelectFolder.Click += BtnSelectFolder_Click;
@@ -65,11 +63,17 @@ public partial class MainForm : Form
             : [];
         _configPath = configFiles.Count > 0 ? configFiles[0] : null;
 
-        // 仕様情報ラベル
+        // タイトルバーにexe名を表示
+        var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "PhotoBOX");
+        Text = $"PhotoBOX - {exeName}";
+
+        // 仕様情報ラベル（短縮版）
         var strategyName = _strategy?.Name ?? "未検出";
         var configName = _configPath != null ? Path.GetFileNameWithoutExtension(_configPath) : "未検出";
-        var strategyDesc = _strategy?.Description ?? "";
-        lblSpecInfo.Text = $"{strategyName}：{strategyDesc} | {configName}";
+        lblSpecInfo.Text = $"{strategyName} | {configName}";
+
+        // 戦略の詳細説明はステータスバーに表示
+        lblStatus.Text = $"{strategyName}：{_strategy?.Description ?? ""} | {configName}";
 
         // 起動時の前提条件チェック
         if (!File.Exists(_modelPath))
@@ -110,6 +114,13 @@ public partial class MainForm : Form
     {
         if (_isRunning) return;
         if (_strategy == null || _configPath == null) return;
+
+        // フォルダ未指定なら自動でダイアログを開く
+        if (string.IsNullOrWhiteSpace(txtFolderPath.Text))
+        {
+            BtnSelectFolder_Click(sender, e);
+            if (string.IsNullOrWhiteSpace(txtFolderPath.Text)) return;
+        }
 
         var folderPath = txtFolderPath.Text.Trim();
         if (!Directory.Exists(folderPath))

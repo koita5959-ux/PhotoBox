@@ -22,6 +22,8 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 DisableDirPage=yes
 DisableProgramGroupPage=yes
+CreateUninstallRegKey=no
+Uninstallable=no
 
 [Languages]
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
@@ -47,7 +49,7 @@ Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: onlyifdoesntexist re
 Type: filesandordirs; Name: "{app}"
 
 [Run]
-Filename: "{app}\{code:GetLaunchExeName}"; Description: "PhotoBOXを実行する"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{code:GetLaunchExeName}"; Description: "{code:GetLaunchDescription}"; Flags: nowait postinstall skipifsilent
 Filename: "{cmd}"; Parameters: "/c start """" ""{app}"""; Flags: nowait postinstall skipifsilent runhidden; Description: "インストールフォルダを開く"
 
 [Code]
@@ -127,6 +129,28 @@ begin
     Result := SideExeName
   else
     Result := '{#MyAppExeName}';
+end;
+
+// ── 完了画面の実行ファイル説明 ──
+function GetLaunchDescription(Param: String): String;
+begin
+  if SelectedMode = MODE_SIDE then
+    Result := SideExeName + ' を実行する'
+  else
+    Result := '{#MyAppExeName} を実行する';
+end;
+
+// ── インストール準備完了画面の表示内容 ──
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+begin
+  Result := '';
+  Result := Result + 'インストール先:' + NewLine + Space + ExpandConstant('{app}') + NewLine + NewLine;
+  if SelectedMode = MODE_SIDE then
+    Result := Result + 'インストールするexe:' + NewLine + Space + SideExeName + NewLine
+  else if SelectedMode = MODE_OVERWRITE then
+    Result := Result + 'インストールするexe:' + NewLine + Space + '{#MyAppExeName}（上書き）' + NewLine
+  else
+    Result := Result + 'モード: 全インストール（クリーン）' + NewLine;
 end;
 
 // ── 残骸フォルダの削除 ──
