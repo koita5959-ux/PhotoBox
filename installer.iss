@@ -1,8 +1,8 @@
 ; PhotoBOX Inno Setup Script
-; 1フォルダ複数exe方式
+; 1フォルダ複数exe方式・自動採番
 
 #define MyAppName "PhotoBOX"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.00"
 #define MyAppPublisher "koita5959-ux"
 #define MyAppExeName "PhotoBOX.App.exe"
 
@@ -29,7 +29,7 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 [Files]
 ; 全インストール・上書き: PhotoBOX.App.exeを配置
 Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Check: IsNotSideInstall
-; 別バージョン追加: 識別名でリネームして配置
+; 別バージョン追加: 自動採番でリネームして配置
 Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; DestName: "{code:GetSideExeName}"; Flags: ignoreversion; Check: IsSideInstall
 ; Models（全インストール時は常に配置）
 Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
@@ -61,7 +61,7 @@ var
   ModePage: TWizardPage;
   ModeRadios: array[0..3] of TRadioButton;
   SelectedMode: Integer;
-  SideNamePage: TInputQueryWizardPage;
+  SideExeName: String;
 
 // ── Check関数：ファイルコピーの制御 ──
 function IsFullInstall(): Boolean;
@@ -84,17 +84,47 @@ begin
   Result := (SelectedMode <> MODE_SIDE);
 end;
 
-// ── 識別名exeのファイル名を返す ──
+// ── 自動採番で次のexe名を決定 ──
+function GetNextSideExeName(): String;
+var
+  FindRec: TFindRec;
+  AppDir, FileName, Prefix, SeqStr: String;
+  MaxSeq, Seq: Integer;
+begin
+  AppDir := ExpandConstant('{autodesktop}\{#MyAppName}');
+  Prefix := 'CenterCrop_v{#MyAppVersion}.';
+  MaxSeq := 0;
+
+  if FindFirst(AppDir + '\CenterCrop_v{#MyAppVersion}.*.exe', FindRec) then
+  begin
+    try
+      repeat
+        FileName := FindRec.Name;
+        // .exeを除去してシーケンス番号を取得
+        SeqStr := Copy(FileName, Length(Prefix) + 1, Length(FileName) - Length(Prefix) - 4);
+        Seq := StrToIntDef(SeqStr, 0);
+        if Seq > MaxSeq then
+          MaxSeq := Seq;
+      until not FindNext(FindRec);
+    finally
+      FindClose(FindRec);
+    end;
+  end;
+
+  Result := 'CenterCrop_v{#MyAppVersion}.' + Format('%.2d', [MaxSeq + 1]) + '.exe';
+end;
+
+// ── 自動採番exeのファイル名を返す（[Files]セクション用） ──
 function GetSideExeName(Param: String): String;
 begin
-  Result := SideNamePage.Values[0] + '.exe';
+  Result := SideExeName;
 end;
 
 // ── 実行するexe名を返す（[Run]セクション用） ──
 function GetLaunchExeName(Param: String): String;
 begin
   if SelectedMode = MODE_SIDE then
-    Result := SideNamePage.Values[0] + '.exe'
+    Result := SideExeName
   else
     Result := '{#MyAppExeName}';
 end;
@@ -133,11 +163,8 @@ procedure RemoveAllPhotoBOXInstalls();
 var
   AppDir: String;
 begin
-  // デスクトップのPhotoBOXフォルダを削除
   AppDir := ExpandConstant('{autodesktop}\{#MyAppName}');
   CleanLeftoverDir(AppDir);
-
-  // HKCU/HKLMのレジストリ掃除
   RemovePhotoBOXFromRoot(HKCU);
   RemovePhotoBOXFromRoot(HKLM);
 end;
@@ -151,6 +178,7 @@ var
   Lbl: TLabel;
 begin
   SelectedMode := MODE_FULL;
+  SideExeName := '';
 
   ModePage := CreateCustomPage(wpWelcome,
     'インストールモードの選択',
@@ -163,7 +191,7 @@ begin
 
   Descs[0] := 'PhotoBOXフォルダを初期化し、全ファイルをクリーンインストールします。';
   Descs[1] := 'アプリ本体（PhotoBOX.App.exe）のみ更新します。Config・Modelsは維持します。';
-  Descs[2] := '識別名付きのexeを追加配置します。既存exeはそのまま維持します。';
+  Descs[2] := '自動採番されたexeを追加配置します。既存exeはそのまま維持します。';
   Descs[3] := 'デスクトップのPhotoBOXフォルダとレジストリを完全に削除します。';
 
   Y := 0;
@@ -188,14 +216,6 @@ begin
 
     Y := Y + 52;
   end;
-
-  // 識別名入力ページ（MODE_SIDE時のみ表示）
-  SideNamePage := CreateInputQueryPage(ModePage.ID,
-    '識別名の入力',
-    '並立インストールの識別名を入力してください。',
-    'この識別名がexeファイル名になります。（例: CenterCrop_v1 → CenterCrop_v1.exe）');
-  SideNamePage.Add('識別名:', False);
-  SideNamePage.Values[0] := 'CenterCrop_v1.0.0';
 end;
 
 // ── 選択されたモードを取得 ──
@@ -215,48 +235,19 @@ end;
 // ── 「次へ」ボタン押下時の処理 ──
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
-  AppDir, ExePath: String;
+  AppDir: String;
 begin
   Result := True;
   AppDir := ExpandConstant('{autodesktop}\{#MyAppName}');
 
-  // 識別名入力ページのバリデーション
-  if CurPageID = SideNamePage.ID then
-  begin
-    if SideNamePage.Values[0] = '' then
-    begin
-      MsgBox('識別名を入力してください。', mbError, MB_OK);
-      Result := False;
-      Exit;
-    end;
-
-    ExePath := AppDir + '\' + SideNamePage.Values[0] + '.exe';
-    if FileExists(ExePath) then
-    begin
-      if MsgBox('この識別名のexeは既に存在します。上書きしますか？',
-         mbConfirmation, MB_YESNO) = IDNO then
-      begin
-        Result := False;
-        Exit;
-      end;
-    end;
-
-    // インストール先は常に同一フォルダ
-    WizardForm.DirEdit.Text := AppDir;
-  end;
-
-  // モード選択ページの処理
   if CurPageID = ModePage.ID then
   begin
     SelectedMode := GetSelectedMode();
-
-    // 全モード共通: インストール先を固定
     WizardForm.DirEdit.Text := AppDir;
 
     case SelectedMode of
       MODE_FULL:
       begin
-        // デスクトップのPhotoBOXフォルダを丸ごと削除
         CleanLeftoverDir(AppDir);
       end;
 
@@ -267,7 +258,13 @@ begin
 
       MODE_SIDE:
       begin
-        // 識別名入力ページで処理
+        SideExeName := GetNextSideExeName();
+        if MsgBox(SideExeName + ' としてインストールします。' + #13#10 + 'よろしいですか？',
+           mbConfirmation, MB_YESNO) = IDNO then
+        begin
+          Result := False;
+          Exit;
+        end;
       end;
 
       MODE_REMOVE:
@@ -292,15 +289,9 @@ function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
 
-  // 識別名入力ページはMODE_SIDE以外ではスキップ
-  if (PageID = SideNamePage.ID) and (SelectedMode <> MODE_SIDE) then
-    Result := True;
-
-  // フォルダ選択ページは全モードでスキップ
   if PageID = wpSelectDir then
     Result := True;
 
-  // スタートメニューフォルダ指定ページは全モードでスキップ
   if PageID = wpSelectProgramGroup then
     Result := True;
 end;
