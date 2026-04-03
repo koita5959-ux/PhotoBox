@@ -1,14 +1,13 @@
 ; PhotoBOX Inno Setup Script
-; 4択ウィザード対応版
+; 1フォルダ複数exe方式
 
 #define MyAppName "PhotoBOX"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "koita5959-ux"
 #define MyAppExeName "PhotoBOX.App.exe"
-#define MyStrategyName "CenterCrop"
 
 [Setup]
-AppId={code:GetAppId}
+AppId={{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -21,31 +20,34 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
-DisableDirPage=auto
-DisableProgramGroupPage=auto
-UsePreviousLanguage=no
+DisableDirPage=yes
+DisableProgramGroupPage=yes
 
 [Languages]
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Files]
-; パブリッシュ出力からexeをコピー（全モードで配置）
-Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-; ONNXモデル（上書きモード時はスキップ）
+; 全インストール・上書き: PhotoBOX.App.exeを配置
+Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Check: IsNotSideInstall
+; 別バージョン追加: 識別名でリネームして配置
+Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; DestName: "{code:GetSideExeName}"; Flags: ignoreversion; Check: IsSideInstall
+; Models（全インストール時は常に配置）
 Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
-; カテゴリ設定（上書きモード時はスキップ）
+; Models（上書き・別バージョン追加時は存在しなければ配置）
+Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: onlyifdoesntexist recursesubdirs createallsubdirs; Check: IsNotFullInstall
+; Config（全インストール時は常に配置）
 Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
+; Config（上書き・別バージョン追加時は存在しなければ配置）
+Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: onlyifdoesntexist recursesubdirs createallsubdirs; Check: IsNotFullInstall
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: IsNotSideInstall
-; 別バージョン追加インストール用アイコン
-Name: "{group}\{#MyAppName} - {#MyStrategyName} v{#MyAppVersion}"; Filename: "{app}\{#MyAppExeName}"; Check: IsSideInstall
+; スタートメニューへの登録は行わない
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\results"
+Type: filesandordirs; Name: "{app}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{code:GetLaunchExeName}"; Description: "PhotoBOXを実行する"; Flags: nowait postinstall skipifsilent
 Filename: "{cmd}"; Parameters: "/c start """" ""{app}"""; Flags: nowait postinstall skipifsilent runhidden; Description: "インストールフォルダを開く"
 
 [Code]
@@ -61,19 +63,15 @@ var
   SelectedMode: Integer;
   SideNamePage: TInputQueryWizardPage;
 
-// ── AppIdの動的生成 ──
-function GetAppId(Param: String): String;
-begin
-  if SelectedMode = MODE_SIDE then
-    Result := '{#MyAppName}_' + SideNamePage.Values[0]
-  else
-    Result := '{{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}';
-end;
-
 // ── Check関数：ファイルコピーの制御 ──
 function IsFullInstall(): Boolean;
 begin
-  Result := (SelectedMode <> MODE_OVERWRITE);
+  Result := (SelectedMode = MODE_FULL);
+end;
+
+function IsNotFullInstall(): Boolean;
+begin
+  Result := (SelectedMode <> MODE_FULL);
 end;
 
 function IsSideInstall(): Boolean;
@@ -86,63 +84,19 @@ begin
   Result := (SelectedMode <> MODE_SIDE);
 end;
 
-// ── 既存PhotoBOXのアンインストール情報をレジストリから取得 ──
-function GetExistingUninstallString(): String;
-var
-  UninstStr: String;
+// ── 識別名exeのファイル名を返す ──
+function GetSideExeName(Param: String): String;
 begin
-  Result := '';
-  // まずHKCUを検索（PrivilegesRequired=lowest時）
-  if RegQueryStringValue(HKCU,
-    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
-    'UninstallString', UninstStr) then
-  begin
-    Result := RemoveQuotes(UninstStr);
-    Exit;
-  end;
-  // 見つからなければHKLM（admin時の旧インストール）
-  if RegQueryStringValue(HKLM,
-    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
-    'UninstallString', UninstStr) then
-    Result := RemoveQuotes(UninstStr);
+  Result := SideNamePage.Values[0] + '.exe';
 end;
 
-function GetExistingInstallDir(): String;
-var
-  Dir: String;
+// ── 実行するexe名を返す（[Run]セクション用） ──
+function GetLaunchExeName(Param: String): String;
 begin
-  Result := '';
-  // まずHKCUを検索
-  if RegQueryStringValue(HKCU,
-    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
-    'InstallLocation', Dir) then
-  begin
-    Result := Dir;
-    Exit;
-  end;
-  // 見つからなければHKLM
-  if RegQueryStringValue(HKLM,
-    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B8A3D2E1-7F4C-4E9A-A1D6-3C5E8F2B9D47}_is1',
-    'InstallLocation', Dir) then
-    Result := Dir;
-end;
-
-// ── 既存インストールのアンインストーラーを実行 ──
-function RunUninstaller(): Boolean;
-var
-  UninstStr: String;
-  ResultCode: Integer;
-begin
-  Result := True;
-  UninstStr := GetExistingUninstallString();
-  if UninstStr <> '' then
-  begin
-    if FileExists(UninstStr) then
-    begin
-      Exec(UninstStr, '/SILENT /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      Result := (ResultCode = 0);
-    end;
-  end;
+  if SelectedMode = MODE_SIDE then
+    Result := SideNamePage.Values[0] + '.exe'
+  else
+    Result := '{#MyAppExeName}';
 end;
 
 // ── 残骸フォルダの削除 ──
@@ -152,13 +106,12 @@ begin
     DelTree(Dir, True, True, True);
 end;
 
-// ── 指定ルートキー配下の全PhotoBOXを検出して削除 ──
+// ── 指定ルートキー配下の全PhotoBOXレジストリを削除 ──
 procedure RemovePhotoBOXFromRoot(RootKey: Integer);
 var
   Keys: TArrayOfString;
   I: Integer;
-  DisplayName, UninstStr, InstDir: String;
-  ResultCode: Integer;
+  DisplayName: String;
   BasePath: String;
 begin
   BasePath := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';
@@ -169,31 +122,24 @@ begin
       if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'DisplayName', DisplayName) then
       begin
         if Pos('PhotoBOX', DisplayName) > 0 then
-        begin
-          if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'UninstallString', UninstStr) then
-          begin
-            UninstStr := RemoveQuotes(UninstStr);
-            if FileExists(UninstStr) then
-              Exec(UninstStr, '/SILENT /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-          end;
-          if RegQueryStringValue(RootKey, BasePath + '\' + Keys[I], 'InstallLocation', InstDir) then
-            CleanLeftoverDir(InstDir);
-        end;
+          RegDeleteKeyIncludingSubkeys(RootKey, BasePath + '\' + Keys[I]);
       end;
     end;
   end;
 end;
 
-// ── 全PhotoBOX関連のインストールを検出して削除 ──
+// ── 全PhotoBOX関連を削除 ──
 procedure RemoveAllPhotoBOXInstalls();
+var
+  AppDir: String;
 begin
-  // HKCUとHKLMの両方を検索
+  // デスクトップのPhotoBOXフォルダを削除
+  AppDir := ExpandConstant('{autodesktop}\{#MyAppName}');
+  CleanLeftoverDir(AppDir);
+
+  // HKCU/HKLMのレジストリ掃除
   RemovePhotoBOXFromRoot(HKCU);
   RemovePhotoBOXFromRoot(HKLM);
-
-  // デスクトップ上のPhotoBOX関連ショートカット削除
-  if FileExists(ExpandConstant('{autodesktop}\{#MyAppName}.lnk')) then
-    DeleteFile(ExpandConstant('{autodesktop}\{#MyAppName}.lnk'));
 end;
 
 // ── カスタムウィザードページの初期化 ──
@@ -215,10 +161,10 @@ begin
   Labels[2] := '別バージョン追加インストール';
   Labels[3] := 'すべてを削除（完全アンインストール）';
 
-  Descs[0] := '既存をアンインストールし、全ファイルをクリーンインストールします。';
-  Descs[1] := 'アプリ本体のみ更新します。testdata・Config・Modelsは維持します。';
-  Descs[2] := '既存と別フォルダに並立インストールします。';
-  Descs[3] := '全てのPhotoBOXを検出して完全に削除します。';
+  Descs[0] := 'PhotoBOXフォルダを初期化し、全ファイルをクリーンインストールします。';
+  Descs[1] := 'アプリ本体（PhotoBOX.App.exe）のみ更新します。Config・Modelsは維持します。';
+  Descs[2] := '識別名付きのexeを追加配置します。既存exeはそのまま維持します。';
+  Descs[3] := 'デスクトップのPhotoBOXフォルダとレジストリを完全に削除します。';
 
   Y := 0;
   for I := 0 to 3 do
@@ -247,8 +193,8 @@ begin
   SideNamePage := CreateInputQueryPage(ModePage.ID,
     '識別名の入力',
     '並立インストールの識別名を入力してください。',
-    'この識別名がフォルダ名・ショートカット名に使われます。');
-  SideNamePage.Add('識別名（例: CenterCrop_v1）:', False);
+    'この識別名がexeファイル名になります。（例: CenterCrop_v1 → CenterCrop_v1.exe）');
+  SideNamePage.Add('識別名:', False);
   SideNamePage.Values[0] := 'CenterCrop_v1.0.0';
 end;
 
@@ -269,11 +215,12 @@ end;
 // ── 「次へ」ボタン押下時の処理 ──
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
-  Dir: String;
+  AppDir, ExePath: String;
 begin
   Result := True;
+  AppDir := ExpandConstant('{autodesktop}\{#MyAppName}');
 
-  // 識別名入力ページの「次へ」でバリデーション＋フォルダ名・グループ名を設定
+  // 識別名入力ページのバリデーション
   if CurPageID = SideNamePage.ID then
   begin
     if SideNamePage.Values[0] = '' then
@@ -283,10 +230,10 @@ begin
       Exit;
     end;
 
-    Dir := ExpandConstant('{autodesktop}\{#MyAppName}_') + SideNamePage.Values[0];
-    if DirExists(Dir) then
+    ExePath := AppDir + '\' + SideNamePage.Values[0] + '.exe';
+    if FileExists(ExePath) then
     begin
-      if MsgBox('この識別名は既にインストールされています。上書きしますか？',
+      if MsgBox('この識別名のexeは既に存在します。上書きしますか？',
          mbConfirmation, MB_YESNO) = IDNO then
       begin
         Result := False;
@@ -294,35 +241,38 @@ begin
       end;
     end;
 
-    WizardForm.DirEdit.Text := Dir;
-    WizardForm.GroupEdit.Text := '{#MyAppName} - ' + SideNamePage.Values[0];
+    // インストール先は常に同一フォルダ
+    WizardForm.DirEdit.Text := AppDir;
   end;
 
+  // モード選択ページの処理
   if CurPageID = ModePage.ID then
   begin
     SelectedMode := GetSelectedMode();
 
+    // 全モード共通: インストール先を固定
+    WizardForm.DirEdit.Text := AppDir;
+
     case SelectedMode of
       MODE_FULL:
       begin
-        Dir := GetExistingInstallDir();
-        RunUninstaller();
-        CleanLeftoverDir(Dir);
+        // デスクトップのPhotoBOXフォルダを丸ごと削除
+        CleanLeftoverDir(AppDir);
       end;
 
       MODE_OVERWRITE:
       begin
-        // EXEのみ上書き — 追加処理なし
+        // 追加処理なし
       end;
 
       MODE_SIDE:
       begin
-        // 識別名入力ページの「次へ」で反映
+        // 識別名入力ページで処理
       end;
 
       MODE_REMOVE:
       begin
-        if MsgBox('全てのPhotoBOX関連ファイルを削除します。' + #13#10 + 'よろしいですか？',
+        if MsgBox('デスクトップのPhotoBOXフォルダとレジストリ情報を全て削除します。' + #13#10 + 'よろしいですか？',
            mbConfirmation, MB_YESNO) = IDYES then
         begin
           RemoveAllPhotoBOXInstalls();
@@ -347,7 +297,11 @@ begin
     Result := True;
 
   // フォルダ選択ページは全モードでスキップ
-  if (PageID = wpSelectDir) then
+  if PageID = wpSelectDir then
+    Result := True;
+
+  // スタートメニューフォルダ指定ページは全モードでスキップ
+  if PageID = wpSelectProgramGroup then
     Result := True;
 end;
 
