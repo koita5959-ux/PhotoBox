@@ -275,10 +275,28 @@ var
 begin
   Result := True;
 
-  // 識別名入力ページの「次へ」でフォルダ名・グループ名を設定
+  // 識別名入力ページの「次へ」でバリデーション＋フォルダ名・グループ名を設定
   if CurPageID = SideNamePage.ID then
   begin
-    WizardForm.DirEdit.Text := ExpandConstant('{autodesktop}\{#MyAppName}_') + SideNamePage.Values[0];
+    if SideNamePage.Values[0] = '' then
+    begin
+      MsgBox('識別名を入力してください。', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+
+    Dir := ExpandConstant('{autodesktop}\{#MyAppName}_') + SideNamePage.Values[0];
+    if DirExists(Dir) then
+    begin
+      if MsgBox('この識別名は既にインストールされています。上書きしますか？',
+         mbConfirmation, MB_YESNO) = IDNO then
+      begin
+        Result := False;
+        Exit;
+      end;
+    end;
+
+    WizardForm.DirEdit.Text := Dir;
     WizardForm.GroupEdit.Text := '{#MyAppName} - ' + SideNamePage.Values[0];
   end;
 
@@ -330,8 +348,8 @@ begin
   if (PageID = SideNamePage.ID) and (SelectedMode <> MODE_SIDE) then
     Result := True;
 
-  // 上書きインストール・全インストール時はフォルダ選択をスキップ
-  if (PageID = wpSelectDir) and (SelectedMode <> MODE_SIDE) then
+  // フォルダ選択ページは全モードでスキップ
+  if (PageID = wpSelectDir) then
     Result := True;
 end;
 
