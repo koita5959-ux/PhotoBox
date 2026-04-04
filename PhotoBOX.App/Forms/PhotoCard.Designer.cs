@@ -4,63 +4,64 @@ partial class PhotoCard
 {
     private PictureBox picThumbnail;
     private Label lblCategory;
+    private CheckBox chkNg;
     private Label lblConfidence;
     private Label lblFileName;
-    private CheckBox chkNg;
 
     private void InitializeComponent()
     {
         picThumbnail = new PictureBox();
         lblCategory = new Label();
+        chkNg = new CheckBox();
         lblConfidence = new Label();
         lblFileName = new Label();
-        chkNg = new CheckBox();
 
         SuspendLayout();
 
-        // picThumbnail
-        picThumbnail.Location = new Point(10, 10);
-        picThumbnail.Size = new Size(180, 180);
+        // picThumbnail (F6-04: BackColor=LightGray)
+        picThumbnail.Location = new Point(5, 5);
+        picThumbnail.Size = new Size(190, 170);
         picThumbnail.SizeMode = PictureBoxSizeMode.Zoom;
-        picThumbnail.BackColor = Color.White;
+        picThumbnail.BackColor = Color.LightGray;
 
+        // F6-07: 分類名とNGチェックボックスを横並び
         // lblCategory
-        lblCategory.Location = new Point(10, 195);
-        lblCategory.Size = new Size(180, 20);
+        lblCategory.Location = new Point(5, 178);
+        lblCategory.Size = new Size(140, 18);
         lblCategory.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
-        lblCategory.TextAlign = ContentAlignment.MiddleCenter;
+        lblCategory.TextAlign = ContentAlignment.MiddleLeft;
 
-        // lblConfidence
-        lblConfidence.Location = new Point(10, 215);
-        lblConfidence.Size = new Size(180, 18);
-        lblConfidence.TextAlign = ContentAlignment.MiddleCenter;
-        lblConfidence.Font = new Font(Font.FontFamily, 8f);
-
-        // lblFileName
-        lblFileName.Location = new Point(10, 233);
-        lblFileName.Size = new Size(180, 18);
-        lblFileName.TextAlign = ContentAlignment.MiddleCenter;
-        lblFileName.Font = new Font(Font.FontFamily, 7.5f);
-        lblFileName.ForeColor = Color.DimGray;
-
-        // chkNg
-        chkNg.Location = new Point(75, 254);
-        chkNg.Size = new Size(50, 20);
+        // chkNg (F6-07: 分類名の右隣)
+        chkNg.Location = new Point(145, 178);
+        chkNg.Size = new Size(50, 18);
         chkNg.Text = "NG";
         chkNg.TextAlign = ContentAlignment.MiddleCenter;
 
-        // PhotoCard
-        Size = new Size(200, 280);
-        MinimumSize = new Size(200, 280);
-        MaximumSize = new Size(200, 280);
+        // lblConfidence (F6-06: ファイルサイズ・ピクセル数追加は PhotoCard.cs で設定)
+        lblConfidence.Location = new Point(5, 197);
+        lblConfidence.Size = new Size(190, 30);
+        lblConfidence.TextAlign = ContentAlignment.TopLeft;
+        lblConfidence.Font = new Font(Font.FontFamily, 7.5f);
+
+        // lblFileName
+        lblFileName.Location = new Point(5, 228);
+        lblFileName.Size = new Size(190, 16);
+        lblFileName.TextAlign = ContentAlignment.MiddleCenter;
+        lblFileName.Font = new Font(Font.FontFamily, 7f);
+        lblFileName.ForeColor = Color.DimGray;
+
+        // PhotoCard (F6-05: 高さ成り行き — 固定サイズ廃止)
+        Size = new Size(200, 248);
+        MinimumSize = new Size(200, 0);
+        MaximumSize = new Size(200, 0);
         Margin = new Padding(5);
         BorderStyle = BorderStyle.FixedSingle;
 
         Controls.Add(picThumbnail);
         Controls.Add(lblCategory);
+        Controls.Add(chkNg);
         Controls.Add(lblConfidence);
         Controls.Add(lblFileName);
-        Controls.Add(chkNg);
 
         ResumeLayout(false);
     }

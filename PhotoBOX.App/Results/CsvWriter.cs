@@ -25,25 +25,29 @@ public static class CsvWriter
     /// </summary>
     public static string Write(IReadOnlyList<JudgeResult> results, string outputDir, string version, string buildDate)
     {
-        return Write(results, outputDir, version, buildDate, "", null);
+        if (results.Count == 0)
+            throw new ArgumentException("結果が0件です。");
+
+        var first = results[0];
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var baseFileName = $"{first.StrategyName}_{first.CategoryConfigName}_{timestamp}";
+        return Write(results, outputDir, baseFileName, version, buildDate, null);
     }
 
     /// <summary>
-    /// JudgeResult のリストをCSVファイルに出力する（GUI版：モニター名・NG判定付き）。
+    /// JudgeResult のリストをCSVファイルに出力する（GUI版：ベースファイル名指定）。
+    /// F6-03/F6-09: 書き出し予定ファイル名を外部から指定。
     /// </summary>
-    public static string Write(IReadOnlyList<JudgeResult> results, string outputDir, string version, string buildDate,
-        string monitorName, IReadOnlyList<bool>? ngFlags)
+    public static string Write(IReadOnlyList<JudgeResult> results, string outputDir, string baseFileName,
+        string version, string buildDate, IReadOnlyList<bool>? ngFlags)
     {
         if (results.Count == 0)
             throw new ArgumentException("結果が0件です。");
 
         var hasExtended = ngFlags != null;
         var first = results[0];
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var fileName = $"{first.StrategyName}_{first.CategoryConfigName}_{timestamp}.csv";
+        var fileName = $"{baseFileName}.csv";
         var filePath = Path.Combine(outputDir, fileName);
-
-        Directory.CreateDirectory(outputDir);
 
         var sb = new StringBuilder();
 
@@ -53,8 +57,6 @@ public static class CsvWriter
         sb.AppendLine($"# Build: {buildDate}");
         sb.AppendLine($"# Strategy: {first.StrategyName}");
         sb.AppendLine($"# CategoryConfig: {first.CategoryConfigName}");
-        if (!string.IsNullOrEmpty(monitorName))
-            sb.AppendLine($"# Monitor: {monitorName}");
         sb.AppendLine($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine($"# ImageCount: {results.Count}");
 
@@ -80,7 +82,8 @@ public static class CsvWriter
             if (hasExtended)
             {
                 var ng = ngFlags != null && i < ngFlags.Count && ngFlags[i];
-                baseLine += $",{Escape(monitorName)},{(ng ? "true" : "false")}";
+                // MonitorName列は空文字（F6-03でモニター名→ファイル名に変更のため）
+                baseLine += $",\"\",{(ng ? "true" : "false")}";
             }
 
             sb.AppendLine(baseLine);

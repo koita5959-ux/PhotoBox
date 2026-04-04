@@ -32,18 +32,39 @@ public partial class PhotoCard : UserControl
         Result = result;
 
         lblCategory.Text = result.JudgedCategory;
-        lblConfidence.Text = $"信頼度: {result.Confidence:F3}";
         lblFileName.Text = result.FileName;
+
+        // F6-06: 信頼度 + ファイルサイズ + ピクセル数
+        var confidenceText = $"信頼度:{result.Confidence:F3}";
+        var fileSizeText = "";
+        var pixelText = "";
 
         try
         {
+            var fi = new FileInfo(imagePath);
+            fileSizeText = FormatFileSize(fi.Length);
+        }
+        catch { /* ファイルアクセス失敗時はスキップ */ }
+
+        // F6-08: .webp対応を含む画像読み込み
+        try
+        {
             using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read);
-            picThumbnail.Image = Image.FromStream(fs);
+            var img = Image.FromStream(fs);
+            picThumbnail.Image = img;
+            pixelText = $"{img.Width}×{img.Height}";
         }
         catch
         {
-            // 画像読み込みに失敗した場合はデフォルト表示
+            // GDI+で読めない場合（webp非対応環境等）はサムネなし
+            pixelText = "";
         }
+
+        // 信頼度行の組み立て
+        var parts = new List<string> { confidenceText };
+        if (!string.IsNullOrEmpty(fileSizeText)) parts.Add(fileSizeText);
+        if (!string.IsNullOrEmpty(pixelText)) parts.Add(pixelText);
+        lblConfidence.Text = string.Join(" / ", parts);
 
         UpdateBackgroundColor();
 
@@ -53,6 +74,13 @@ public partial class PhotoCard : UserControl
             UpdateBackgroundColor();
             NgChanged?.Invoke(this, EventArgs.Empty);
         };
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024)
+            return $"{bytes / (1024.0 * 1024.0):F1}MB";
+        return $"{bytes / 1024.0:F0}KB";
     }
 
     private void UpdateBackgroundColor()

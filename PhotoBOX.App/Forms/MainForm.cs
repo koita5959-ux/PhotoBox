@@ -11,7 +11,6 @@ public partial class MainForm : Form
     private readonly string _baseDir;
     private readonly string _modelPath;
     private readonly string _configDir;
-    private readonly string _resultsDir;
 
     private string _version = "0.0.0";
     private string _buildDate = "不明";
@@ -20,6 +19,8 @@ public partial class MainForm : Form
 
     private List<JudgeResult> _results = [];
     private readonly Dictionary<JudgeResult, bool> _ngFlags = [];
+    // 各画像の元ファイルパスを保持（3点セット出力用）
+    private readonly Dictionary<JudgeResult, string> _imagePaths = [];
 
     private bool _isRunning;
 
@@ -30,9 +31,6 @@ public partial class MainForm : Form
         _baseDir = AppContext.BaseDirectory;
         _modelPath = Path.Combine(_baseDir, "Models", "mobilenetv2-7.onnx");
         _configDir = Path.Combine(_baseDir, "Config");
-        _resultsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "PhotoBOX", "results");
 
         // フォルダパスは空欄（判定実行時にダイアログで選択）
         txtFolderPath.Text = "";
@@ -153,6 +151,7 @@ public partial class MainForm : Form
         photoGrid.Controls.Clear();
         _results.Clear();
         _ngFlags.Clear();
+        _imagePaths.Clear();
 
         progressBar.Minimum = 0;
         progressBar.Maximum = imageFiles.Length;
@@ -178,6 +177,7 @@ public partial class MainForm : Form
                 {
                     _results.Add(result);
                     _ngFlags[result] = false;
+                    _imagePaths[result] = file;
 
                     var card = new PhotoCard(result, file);
                     card.NgChanged += (_, _) =>
@@ -200,6 +200,20 @@ public partial class MainForm : Form
         btnRun.Enabled = true;
         btnExportCsv.Enabled = true;
         _isRunning = false;
+
+        // F6-03: 判定実行後にデフォルトファイル名を自動生成
+        UpdateDefaultExportFileName();
+    }
+
+    /// <summary>
+    /// F6-03: デフォルトの書き出し予定ファイル名を生成してテキストボックスに設定
+    /// </summary>
+    private void UpdateDefaultExportFileName()
+    {
+        if (_results.Count == 0) return;
+        var first = _results[0];
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        txtExportFileName.Text = $"{first.StrategyName}_{first.CategoryConfigName}_{timestamp}";
     }
 
     private void UpdateNgCount()
@@ -219,17 +233,36 @@ public partial class MainForm : Form
 
         try
         {
-            var monitorName = txtMonitorName.Text.Trim();
-            var ngList = _results.Select(r => _ngFlags.GetValueOrDefault(r, false)).ToList();
-            var csvPath = CsvWriter.Write(_results, _resultsDir, _version, _buildDate, monitorName, ngList);
+            // F6-03: ファイル名入力欄の値をベースファイル名として使用
+            var baseFileName = txtExportFileName.Text.Trim();
+            if (string.IsNullOrWhiteSpace(baseFileName))
+            {
+                MessageBox.Show("書き出し予定ファイル名を入力してください。", "情報",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
-            lblStatus.Text = $"CSV出力完了: {csvPath}";
-            MessageBox.Show($"CSVを出力しました:\n{csvPath}", "CSV出力完了",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // F6-09: デスクトップ直下に出力
+            var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var ngList = _results.Select(r => _ngFlags.GetValueOrDefault(r, false)).ToList();
+            var imagePathList = _results.Select(r => _imagePaths.GetValueOrDefault(r, "")).ToList();
+
+            // 3点セット出力
+            var csvPath = CsvWriter.Write(_results, desktopPath, baseFileName, _version, _buildDate, ngList);
+            ExportWriter.WriteImageFolder(_results, imagePathList, desktopPath, baseFileName);
+            ExportWriter.WriteXlsx(_results, imagePathList, ngList, desktopPath, baseFileName);
+
+            lblStatus.Text = $"出力完了: {baseFileName}";
+            MessageBox.Show(
+                $"デスクトップに出力しました:\n" +
+                $"  {baseFileName}.csv\n" +
+                $"  {baseFileName}.xlsx\n" +
+                $"  {baseFileName}/（224×224画像）",
+                "出力完了", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"CSV出力に失敗しました:\n{ex.Message}", "エラー",
+            MessageBox.Show($"出力に失敗しました:\n{ex.Message}", "エラー",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

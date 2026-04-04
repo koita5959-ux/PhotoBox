@@ -14,23 +14,20 @@
 
   <!-- ONNXモデル: PhotoJudge/Models/ → 出力の Models/ -->
   <ItemGroup Condition="Exists('..\PhotoJudge\Models\mobilenetv2-7.onnx')">
-    <None Include="..\PhotoJudge\Models\mobilenetv2-7.onnx"
-          CopyToOutputDirectory="PreserveNewest"
-          Link="Models\mobilenetv2-7.onnx" />
+    <None Include="..\PhotoJudge\Models\mobilenetv2-7.onnx" CopyToOutputDirectory="PreserveNewest" Link="Models\mobilenetv2-7.onnx" />
   </ItemGroup>
 
   <!-- カテゴリ設定: PhotoJudge/Config/ → 出力の Config/ -->
   <ItemGroup>
-    <None Include="..\PhotoJudge\Config\**\*.json"
-          CopyToOutputDirectory="PreserveNewest"
-          Link="Config\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\PhotoJudge\Config\**\*.json" CopyToOutputDirectory="PreserveNewest" Link="Config\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- テストデータ: testdata/ → 出力の testdata/ -->
   <ItemGroup>
-    <None Include="..\testdata\**\*"
-          CopyToOutputDirectory="PreserveNewest"
-          Link="testdata\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\testdata\**\*" CopyToOutputDirectory="PreserveNewest" Link="testdata\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
   </ItemGroup>
 
 </Project>
