@@ -50,10 +50,9 @@ partial class PhotoCard
         lblFileName.Font = new Font(Font.FontFamily, 7f);
         lblFileName.ForeColor = Color.DimGray;
 
-        // PhotoCard (F6-05: 高さ成り行き — 固定サイズ廃止)
+        // PhotoCard
         Size = new Size(200, 248);
-        MinimumSize = new Size(200, 0);
-        MaximumSize = new Size(200, 0);
+        MinimumSize = new Size(200, 248);
         Margin = new Padding(5);
         BorderStyle = BorderStyle.FixedSingle;
 

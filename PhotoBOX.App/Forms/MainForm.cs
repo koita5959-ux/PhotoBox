@@ -1,5 +1,6 @@
 using PhotoJudge.Core;
 using PhotoJudge.Interfaces;
+using PhotoJudge.CategoryMapping;
 using PhotoBOX.App.Results;
 
 namespace PhotoBOX.App.Forms;
@@ -72,6 +73,14 @@ public partial class MainForm : Form
         lblSpecParams.Text = "短辺：224px　長辺：元画像比率維持";
         lblSpecDesc.Text = _strategy?.Description ?? "";
         lblSpecCategory.Text = $"分類：{configName}";
+
+        // カテゴリ一覧をConfigから読み取り表示
+        if (_configPath != null)
+        {
+            var mapper = new CategoryMapper(_configPath);
+            var activeCategories = mapper.Categories.Where(c => c != "その他").ToArray();
+            lblSpecCategories.Text = string.Join(" / ", activeCategories) + "  + その他";
+        }
 
         // 起動時の前提条件チェック
         if (!File.Exists(_modelPath))

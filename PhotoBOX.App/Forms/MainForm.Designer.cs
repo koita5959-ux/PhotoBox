@@ -23,6 +23,7 @@ partial class MainForm
     private Label lblSpecParams;
     private Label lblSpecDesc;
     private Label lblSpecCategory;
+    private Label lblSpecCategories;
 
     // 書き出し予定ファイル名 (F6-03: モニター名→ファイル名入力欄)
     private Label lblFileNameLabel;
@@ -58,6 +59,7 @@ partial class MainForm
         lblSpecParams = new Label();
         lblSpecDesc = new Label();
         lblSpecCategory = new Label();
+        lblSpecCategories = new Label();
         lblFileNameLabel = new Label();
         txtExportFileName = new TextBox();
         btnExportCsv = new Button();
@@ -77,188 +79,187 @@ partial class MainForm
         splitContainer.Panel2.SuspendLayout();
         rightPanel.SuspendLayout();
 
-        var rpw = 280; // rightPanel width (F6-02: 拡大)
-        var cw = rpw - 20; // content width (10px margin each side)
-        var anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        const int margin = 12; // 左右余白
 
         // ── rightPanel ──
         rightPanel.Dock = DockStyle.Fill;
         rightPanel.BackColor = SystemColors.Control;
-        rightPanel.Padding = new Padding(10);
         rightPanel.Paint += (s, e) =>
         {
             using var pen = new Pen(SystemColors.ControlDark, 1);
             e.Graphics.DrawLine(pen, 0, 0, 0, rightPanel.Height);
         };
 
+        // 幅可変コントロールをResizeで再配置するヘルパー
+        var stretchControls = new List<Control>();
+        var sepControls = new List<Label>();
+
         // ── 1. フォルダ選択 (Y=10) ──
-        int y = 10;
+        int y = margin;
 
         lblFolderLabel.Text = "フォルダ";
         lblFolderLabel.AutoSize = true;
-        lblFolderLabel.Location = new Point(10, y);
+        lblFolderLabel.Location = new Point(margin, y);
         lblFolderLabel.Font = new Font(Font.FontFamily, 9f);
         lblFolderLabel.ForeColor = SystemColors.GrayText;
-        lblFolderLabel.Anchor = anchor;
 
         y += 18;
-        txtFolderPath.Location = new Point(10, y);
-        txtFolderPath.Width = cw - 55;
-        txtFolderPath.Anchor = anchor;
+        txtFolderPath.Location = new Point(margin, y);
+        txtFolderPath.Width = 100; // Resizeで再計算
+        stretchControls.Add(txtFolderPath);
 
         btnSelectFolder.Text = "選択";
-        btnSelectFolder.Location = new Point(rpw - 60, y - 1);
         btnSelectFolder.Size = new Size(50, 23);
         btnSelectFolder.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
-        // ── 2. 判定実行ボタン ──
+        // ── 2. 判定実行ボタン（固定幅） ──
         y += 30;
         btnRun.Text = "判定実行";
-        btnRun.Location = new Point(10, y);
-        btnRun.Size = new Size(cw, 30);
-        btnRun.Anchor = anchor;
+        btnRun.Location = new Point(margin, y);
+        btnRun.Size = new Size(120, 28);
 
         // ── 3. プログレスバー ──
-        y += 38;
-        progressBar.Location = new Point(10, y);
-        progressBar.Size = new Size(cw, 18);
-        progressBar.Anchor = anchor;
+        y += 36;
+        progressBar.Location = new Point(margin, y);
+        progressBar.Size = new Size(100, 18); // Resizeで再計算
+        stretchControls.Add(progressBar);
 
         y += 20;
         lblProgress.Text = "0 / 0 枚";
-        lblProgress.Location = new Point(10, y);
-        lblProgress.Size = new Size(cw, 16);
+        lblProgress.Location = new Point(margin, y);
+        lblProgress.Size = new Size(100, 16); // Resizeで再計算
         lblProgress.Font = new Font(Font.FontFamily, 9f);
         lblProgress.TextAlign = ContentAlignment.MiddleCenter;
-        lblProgress.Anchor = anchor;
+        stretchControls.Add(lblProgress);
 
         // ── 4. 仕様情報 ──
         y += 24;
 
         var sepTop = new Label();
-        sepTop.Location = new Point(10, y);
-        sepTop.Size = new Size(cw, 1);
+        sepTop.Location = new Point(margin, y);
+        sepTop.Size = new Size(100, 1);
         sepTop.BackColor = SystemColors.ControlDark;
-        sepTop.Anchor = anchor;
+        sepControls.Add(sepTop);
 
         y += 8;
-        lblSpecTitle.Location = new Point(10, y);
+        lblSpecTitle.Location = new Point(margin, y);
         lblSpecTitle.AutoSize = true;
         lblSpecTitle.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
-        lblSpecTitle.Anchor = anchor;
 
         y += 20;
-        lblSpecParams.Location = new Point(10, y);
+        lblSpecParams.Location = new Point(margin, y);
         lblSpecParams.AutoSize = true;
         lblSpecParams.Font = new Font(Font.FontFamily, 8.5f);
-        lblSpecParams.Anchor = anchor;
 
         y += 18;
-        lblSpecDesc.Location = new Point(10, y);
-        lblSpecDesc.Size = new Size(cw, 32);
+        lblSpecDesc.Location = new Point(margin, y);
+        lblSpecDesc.Size = new Size(100, 32); // Resizeで再計算
         lblSpecDesc.Font = new Font(Font.FontFamily, 8.5f);
         lblSpecDesc.ForeColor = SystemColors.GrayText;
-        lblSpecDesc.Anchor = anchor;
+        stretchControls.Add(lblSpecDesc);
 
         y += 34;
-        lblSpecCategory.Location = new Point(10, y);
+        lblSpecCategory.Location = new Point(margin, y);
         lblSpecCategory.AutoSize = true;
         lblSpecCategory.Font = new Font(Font.FontFamily, 8.5f);
-        lblSpecCategory.Anchor = anchor;
+
+        y += 20;
+        lblSpecCategories.Location = new Point(margin + 8, y);
+        lblSpecCategories.AutoSize = true;
+        lblSpecCategories.Font = new Font(Font.FontFamily, 8.5f);
+        lblSpecCategories.ForeColor = SystemColors.GrayText;
+        lblSpecCategories.Text = "";
 
         y += 20;
         var sepBottom = new Label();
-        sepBottom.Location = new Point(10, y);
-        sepBottom.Size = new Size(cw, 1);
+        sepBottom.Location = new Point(margin, y);
+        sepBottom.Size = new Size(100, 1);
         sepBottom.BackColor = SystemColors.ControlDark;
-        sepBottom.Anchor = anchor;
+        sepControls.Add(sepBottom);
 
         // ── 5. 書き出し予定ファイル名 (F6-03) ──
         y += 12;
         lblFileNameLabel.Text = "書き出し予定ファイル名";
         lblFileNameLabel.AutoSize = true;
-        lblFileNameLabel.Location = new Point(10, y);
+        lblFileNameLabel.Location = new Point(margin, y);
         lblFileNameLabel.Font = new Font(Font.FontFamily, 9f);
         lblFileNameLabel.ForeColor = SystemColors.GrayText;
-        lblFileNameLabel.Anchor = anchor;
 
         y += 18;
-        txtExportFileName.Location = new Point(10, y);
-        txtExportFileName.Width = cw;
-        txtExportFileName.Anchor = anchor;
+        txtExportFileName.Location = new Point(margin, y);
+        txtExportFileName.Width = 100; // Resizeで再計算
+        stretchControls.Add(txtExportFileName);
 
         // ── 6. CSV出力 + NG件数 ──
         y += 30;
         btnExportCsv.Text = "CSV出力";
-        btnExportCsv.Location = new Point(10, y);
+        btnExportCsv.Location = new Point(margin, y);
         btnExportCsv.Size = new Size(90, 26);
-        btnExportCsv.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
         lblNgCount.Text = "NG: 0/0枚";
         lblNgCount.AutoSize = true;
-        lblNgCount.Location = new Point(105, y + 5);
+        lblNgCount.Location = new Point(margin + 95, y + 5);
         lblNgCount.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
         lblNgCount.ForeColor = Color.FromArgb(226, 75, 74);
-        lblNgCount.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
         // ── 6.5 背景色凡例 (F6-10) ──
         y += 34;
         var sepLegend = new Label();
-        sepLegend.Location = new Point(10, y);
-        sepLegend.Size = new Size(cw, 1);
+        sepLegend.Location = new Point(margin, y);
+        sepLegend.Size = new Size(100, 1);
         sepLegend.BackColor = SystemColors.ControlDark;
-        sepLegend.Anchor = anchor;
+        sepControls.Add(sepLegend);
 
         y += 8;
         // 薄緑
-        pnlLegendOkColor.Location = new Point(10, y);
+        pnlLegendOkColor.Location = new Point(margin, y);
         pnlLegendOkColor.Size = new Size(14, 14);
         pnlLegendOkColor.BackColor = Color.FromArgb(230, 255, 230);
         pnlLegendOkColor.BorderStyle = BorderStyle.FixedSingle;
 
         lblLegendOk.Text = "カテゴリ判定あり（その他以外）";
         lblLegendOk.AutoSize = true;
-        lblLegendOk.Location = new Point(28, y);
+        lblLegendOk.Location = new Point(margin + 18, y);
         lblLegendOk.Font = new Font(Font.FontFamily, 8f);
 
         y += 18;
         // 薄黄
-        pnlLegendOtherColor.Location = new Point(10, y);
+        pnlLegendOtherColor.Location = new Point(margin, y);
         pnlLegendOtherColor.Size = new Size(14, 14);
         pnlLegendOtherColor.BackColor = Color.FromArgb(255, 255, 230);
         pnlLegendOtherColor.BorderStyle = BorderStyle.FixedSingle;
 
         lblLegendOther.Text = "その他";
         lblLegendOther.AutoSize = true;
-        lblLegendOther.Location = new Point(28, y);
+        lblLegendOther.Location = new Point(margin + 18, y);
         lblLegendOther.Font = new Font(Font.FontFamily, 8f);
 
         y += 18;
         // 薄赤
-        pnlLegendNgColor.Location = new Point(10, y);
+        pnlLegendNgColor.Location = new Point(margin, y);
         pnlLegendNgColor.Size = new Size(14, 14);
         pnlLegendNgColor.BackColor = Color.FromArgb(255, 230, 230);
         pnlLegendNgColor.BorderStyle = BorderStyle.FixedSingle;
 
         lblLegendNg.Text = "NG判定";
         lblLegendNg.AutoSize = true;
-        lblLegendNg.Location = new Point(28, y);
+        lblLegendNg.Location = new Point(margin + 18, y);
         lblLegendNg.Font = new Font(Font.FontFamily, 8f);
 
         // ── 7. ステータス（右パネル最下部）──
         var sepStatus = new Label();
-        sepStatus.Size = new Size(cw, 1);
+        sepStatus.Size = new Size(100, 1);
         sepStatus.BackColor = SystemColors.ControlDark;
-        sepStatus.Location = new Point(10, 0);
-        sepStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        sepStatus.Location = new Point(margin, 0);
+        sepControls.Add(sepStatus);
 
         lblStatus.Text = "準備完了";
         lblStatus.AutoSize = false;
-        lblStatus.Size = new Size(cw, 20);
-        lblStatus.Location = new Point(10, 0);
+        lblStatus.Size = new Size(100, 20);
+        lblStatus.Location = new Point(margin, 0);
         lblStatus.Font = new Font(Font.FontFamily, 9f);
         lblStatus.ForeColor = SystemColors.GrayText;
-        lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        stretchControls.Add(lblStatus);
 
         // 右パネルにコントロール追加
         rightPanel.Controls.Add(lblFolderLabel);
@@ -272,6 +273,7 @@ partial class MainForm
         rightPanel.Controls.Add(lblSpecParams);
         rightPanel.Controls.Add(lblSpecDesc);
         rightPanel.Controls.Add(lblSpecCategory);
+        rightPanel.Controls.Add(lblSpecCategories);
         rightPanel.Controls.Add(sepBottom);
         rightPanel.Controls.Add(lblFileNameLabel);
         rightPanel.Controls.Add(txtExportFileName);
@@ -287,9 +289,22 @@ partial class MainForm
         rightPanel.Controls.Add(sepStatus);
         rightPanel.Controls.Add(lblStatus);
 
-        // ステータスを最下部に配置（パネルの高さから逆算）
+        // Resizeで幅可変コントロールとステータス位置を再計算
         rightPanel.Resize += (s, e) =>
         {
+            var cw = rightPanel.ClientSize.Width - margin * 2;
+            if (cw < 50) return;
+
+            foreach (var ctrl in stretchControls)
+                ctrl.Width = cw;
+            foreach (var sep in sepControls)
+                sep.Width = cw;
+
+            // フォルダTextBoxは「選択」ボタン分を引く
+            txtFolderPath.Width = cw - 55;
+            btnSelectFolder.Location = new Point(rightPanel.ClientSize.Width - margin - 50, txtFolderPath.Top - 1);
+
+            // ステータスを最下部に配置
             sepStatus.Top = rightPanel.ClientSize.Height - 28;
             lblStatus.Top = rightPanel.ClientSize.Height - 24;
         };
@@ -305,9 +320,8 @@ partial class MainForm
         splitContainer.Dock = DockStyle.Fill;
         splitContainer.FixedPanel = FixedPanel.Panel2;
         splitContainer.Orientation = Orientation.Vertical;
-        splitContainer.Panel1MinSize = 300;
-        splitContainer.Panel2MinSize = 250;
         splitContainer.SplitterWidth = 6;
+        // MinSizeはLoad後に設定（EndInit時の制約違反を回避）
 
         splitContainer.Panel1.Controls.Add(photoGrid);
         splitContainer.Panel2.Controls.Add(rightPanel);
@@ -320,15 +334,16 @@ partial class MainForm
 
         Controls.Add(splitContainer);
 
-        // SplitterDistance は Load 後に設定（FormのClientSizeが確定してから）
-        Load += (s, e) =>
-        {
-            // 右パネル初期幅を280に設定
-            splitContainer.SplitterDistance = ClientSize.Width - 280;
-        };
-
         splitContainer.Panel2.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)splitContainer).EndInit();
+
+        // Load後にサイズ確定してからMinSizeとSplitterDistanceを設定
+        Load += (s, e) =>
+        {
+            splitContainer.SplitterDistance = ClientSize.Width - 280;
+            splitContainer.Panel1MinSize = 300;
+            splitContainer.Panel2MinSize = 250;
+        };
         splitContainer.ResumeLayout(false);
         rightPanel.ResumeLayout(false);
         rightPanel.PerformLayout();

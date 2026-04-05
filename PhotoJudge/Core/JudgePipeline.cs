@@ -32,6 +32,9 @@ public class JudgePipeline : IDisposable
 
     public string CategoryConfigName => _mapper.ConfigName;
 
+    /// <summary>現在の分類設定に含まれるカテゴリ一覧（「その他」を含む）</summary>
+    public string[] Categories => _mapper.Categories;
+
     /// <summary>
     /// 1枚の画像を指定戦略で切り出し → ONNX判定 → カテゴリマッピング → 結果返却。
     /// </summary>

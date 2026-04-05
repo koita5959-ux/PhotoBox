@@ -50,14 +50,26 @@ public partial class PhotoCard : UserControl
         try
         {
             using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read);
-            var img = Image.FromStream(fs);
-            picThumbnail.Image = img;
-            pixelText = $"{img.Width}×{img.Height}";
+            using var original = Image.FromStream(fs);
+            picThumbnail.Image = new Bitmap(original);
+            pixelText = $"{original.Width}×{original.Height}";
         }
         catch
         {
-            // GDI+で読めない場合（webp非対応環境等）はサムネなし
-            pixelText = "";
+            // GDI+で読めない場合（webp等）→ ImageSharpで読み込み
+            try
+            {
+                using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(imagePath);
+                pixelText = $"{img.Width}×{img.Height}";
+                using var ms = new MemoryStream();
+                img.Save(ms, new SixLabors.ImageSharp.Formats.Bmp.BmpEncoder());
+                ms.Position = 0;
+                picThumbnail.Image = new Bitmap(ms);
+            }
+            catch
+            {
+                pixelText = "";
+            }
         }
 
         // 信頼度行の組み立て
