@@ -16,7 +16,6 @@ set "INNO_SCRIPT=installer.iss"
 
 echo [1/3] Clean...
 if exist "%PUBLISH_DIR%" rmdir /s /q "%PUBLISH_DIR%"
-if exist "%INSTALLER_DIR%\*.exe" del /q "%INSTALLER_DIR%\*.exe"
 
 echo [2/3] Build + Publish...
 dotnet publish "%PROJECT%\%PROJECT%.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "%PUBLISH_DIR%"
