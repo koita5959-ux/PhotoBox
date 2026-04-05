@@ -10,14 +10,16 @@ public static class CsvWriter
     [
         "FileName", "StrategyName", "CategoryConfig", "JudgedCategory",
         "Confidence", "CropX", "CropY", "CropWidth", "CropHeight",
-        "Version", "Timestamp"
+        "Version", "Timestamp",
+        "FileSize", "OriginalWidth", "OriginalHeight"
     ];
 
     private static readonly string[] ExtendedColumns =
     [
         "FileName", "StrategyName", "CategoryConfig", "JudgedCategory",
         "Confidence", "CropX", "CropY", "CropWidth", "CropHeight",
-        "Version", "Timestamp", "MonitorName", "NG"
+        "Version", "Timestamp", "MonitorName", "NG",
+        "FileSize", "OriginalWidth", "OriginalHeight"
     ];
 
     /// <summary>
@@ -85,6 +87,9 @@ public static class CsvWriter
                 // MonitorName列は空文字（F6-03でモニター名→ファイル名に変更のため）
                 baseLine += $",\"\",{(ng ? "true" : "false")}";
             }
+
+            // 元ファイル情報（Base/Extended共通）
+            baseLine += $",{r.FileSize},{r.OriginalWidth},{r.OriginalHeight}";
 
             sb.AppendLine(baseLine);
         }

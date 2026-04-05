@@ -34,25 +34,20 @@ public partial class PhotoCard : UserControl
         lblCategory.Text = result.JudgedCategory;
         lblFileName.Text = result.FileName;
 
-        // F6-06: 信頼度 + ファイルサイズ + ピクセル数
+        // 1段目: 信頼度 + ファイルサイズ
         var confidenceText = $"信頼度:{result.Confidence:F3}";
-        var fileSizeText = "";
-        var pixelText = "";
+        var fileSizeText = FormatFileSize(result.FileSize);
+        lblConfidence.Text = $"{confidenceText} / {fileSizeText}";
 
-        try
-        {
-            var fi = new FileInfo(imagePath);
-            fileSizeText = FormatFileSize(fi.Length);
-        }
-        catch { /* ファイルアクセス失敗時はスキップ */ }
+        // 2段目: ピクセル数
+        lblPixelInfo.Text = $"{result.OriginalWidth}×{result.OriginalHeight}";
 
-        // F6-08: .webp対応を含む画像読み込み
+        // 元画像プレビュー（左）
         try
         {
             using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read);
             using var original = Image.FromStream(fs);
             picThumbnail.Image = new Bitmap(original);
-            pixelText = $"{original.Width}×{original.Height}";
         }
         catch
         {
@@ -60,23 +55,21 @@ public partial class PhotoCard : UserControl
             try
             {
                 using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(imagePath);
-                pixelText = $"{img.Width}×{img.Height}";
                 using var ms = new MemoryStream();
                 img.Save(ms, new SixLabors.ImageSharp.Formats.Bmp.BmpEncoder());
                 ms.Position = 0;
                 picThumbnail.Image = new Bitmap(ms);
             }
-            catch
-            {
-                pixelText = "";
-            }
+            catch { }
         }
 
-        // 信頼度行の組み立て
-        var parts = new List<string> { confidenceText };
-        if (!string.IsNullOrEmpty(fileSizeText)) parts.Add(fileSizeText);
-        if (!string.IsNullOrEmpty(pixelText)) parts.Add(pixelText);
-        lblConfidence.Text = string.Join(" / ", parts);
+        // クロップ判定画像（右）
+        try
+        {
+            using var ms = new MemoryStream(result.CroppedImageJpeg);
+            picCropped.Image = new Bitmap(ms);
+        }
+        catch { }
 
         UpdateBackgroundColor();
 
@@ -110,6 +103,7 @@ public partial class PhotoCard : UserControl
         if (disposing)
         {
             picThumbnail.Image?.Dispose();
+            picCropped.Image?.Dispose();
         }
         base.Dispose(disposing);
     }

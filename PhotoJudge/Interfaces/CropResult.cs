@@ -17,6 +17,12 @@ public class CropResult : IDisposable
     /// <summary>元画像上の切り出し位置</summary>
     public required Rectangle CropRegion { get; init; }
 
+    /// <summary>元画像の幅（ピクセル）</summary>
+    public required int OriginalWidth { get; init; }
+
+    /// <summary>元画像の高さ（ピクセル）</summary>
+    public required int OriginalHeight { get; init; }
+
     public void Dispose()
     {
         CroppedImage.Dispose();

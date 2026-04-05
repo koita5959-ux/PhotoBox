@@ -25,6 +25,9 @@ public class CenterCropStrategy : ICropStrategy
         int top = (image.Height - shortSide) / 2;
         var cropRegion = new Rectangle(left, top, shortSide, shortSide);
 
+        int originalWidth = image.Width;
+        int originalHeight = image.Height;
+
         var cropped = image.Clone(ctx =>
         {
             ctx.Crop(cropRegion);
@@ -36,7 +39,9 @@ public class CenterCropStrategy : ICropStrategy
             CroppedImage = cropped,
             StrategyName = Name,
             SourcePath = imagePath,
-            CropRegion = cropRegion
+            CropRegion = cropRegion,
+            OriginalWidth = originalWidth,
+            OriginalHeight = originalHeight
         };
     }
 }

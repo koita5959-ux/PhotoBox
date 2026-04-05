@@ -1,6 +1,8 @@
 using PhotoJudge.Interfaces;
 using PhotoJudge.Inference;
 using PhotoJudge.CategoryMapping;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace PhotoJudge.Core;
 
@@ -17,6 +19,18 @@ public class JudgeResult
     public required int CropHeight { get; init; }
     public required string Version { get; init; }
     public required DateTime Timestamp { get; init; }
+
+    /// <summary>判定に使用したクロップ済み224×224画像（JPEG）</summary>
+    public required byte[] CroppedImageJpeg { get; init; }
+
+    /// <summary>元ファイルのサイズ（バイト）</summary>
+    public required long FileSize { get; init; }
+
+    /// <summary>元画像の幅（ピクセル）</summary>
+    public required int OriginalWidth { get; init; }
+
+    /// <summary>元画像の高さ（ピクセル）</summary>
+    public required int OriginalHeight { get; init; }
 }
 
 public class JudgePipeline : IDisposable
@@ -46,7 +60,13 @@ public class JudgePipeline : IDisposable
         var onnxResult = _classifier.Classify(normalized);
         var category = _mapper.Resolve(onnxResult.TopClassIndex);
 
+        // 判定に使用した224×224画像をJPEGバイト列として保持（Export用）
+        using var ms = new MemoryStream();
+        cropResult.CroppedImage.SaveAsJpeg(ms, new JpegEncoder { Quality = 95 });
+        var jpegBytes = ms.ToArray();
+
         var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0";
+        var fileSize = new FileInfo(imagePath).Length;
 
         return new JudgeResult
         {
@@ -60,7 +80,11 @@ public class JudgePipeline : IDisposable
             CropWidth = cropResult.CropRegion.Width,
             CropHeight = cropResult.CropRegion.Height,
             Version = version,
-            Timestamp = DateTime.Now
+            Timestamp = DateTime.Now,
+            CroppedImageJpeg = jpegBytes,
+            FileSize = fileSize,
+            OriginalWidth = cropResult.OriginalWidth,
+            OriginalHeight = cropResult.OriginalHeight
         };
     }
 

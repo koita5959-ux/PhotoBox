@@ -5,16 +5,17 @@ namespace PhotoBOX.App.Results;
 
 /// <summary>
 /// F6-09: 3点セット出力（224×224画像フォルダ、xlsx）のうちCSV以外を担当。
+/// 画像はJudgeResultが保持するクロップ済み224×224 JPEGをそのまま使用する。
+/// xlsxのデータカラムはCSVと同一（B列に判定用画像を追加）。
 /// </summary>
 public static class ExportWriter
 {
     /// <summary>
-    /// 224×224判定用画像をフォルダにコピーする。
+    /// 判定に使用した224×224クロップ画像をフォルダに保存する。
     /// 出力先: {outputDir}/{baseFileName}/
     /// </summary>
     public static void WriteImageFolder(
         IReadOnlyList<JudgeResult> results,
-        IReadOnlyList<string> imagePaths,
         string outputDir,
         string baseFileName)
     {
@@ -23,42 +24,22 @@ public static class ExportWriter
 
         for (int i = 0; i < results.Count; i++)
         {
-            if (i >= imagePaths.Count || string.IsNullOrEmpty(imagePaths[i]))
-                continue;
+            var r = results[i];
+            if (r.CroppedImageJpeg.Length == 0) continue;
 
-            var srcPath = imagePaths[i];
-            if (!File.Exists(srcPath)) continue;
-
-            try
-            {
-                // 224×224 にリサイズして保存
-                using var fs = new FileStream(srcPath, FileMode.Open, FileAccess.Read);
-                using var original = Image.FromStream(fs);
-                using var resized = new Bitmap(224, 224);
-                using (var g = Graphics.FromImage(resized))
-                {
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                    g.DrawImage(original, 0, 0, 224, 224);
-                }
-
-                var destFileName = Path.GetFileNameWithoutExtension(results[i].FileName) + ".jpg";
-                var destPath = Path.Combine(folderPath, destFileName);
-                resized.Save(destPath, System.Drawing.Imaging.ImageFormat.Jpeg);
-            }
-            catch
-            {
-                // 画像変換失敗時はスキップ（webp非対応等）
-            }
+            var destFileName = Path.GetFileNameWithoutExtension(r.FileName) + ".jpg";
+            var destPath = Path.Combine(folderPath, destFileName);
+            File.WriteAllBytes(destPath, r.CroppedImageJpeg);
         }
     }
 
     /// <summary>
-    /// プレビュー確認用xlsxを生成する。
+    /// NGレポート用xlsxを生成する。
+    /// データカラムはCSVと同一、B列に判定用224×224画像を追加。
     /// 出力先: {outputDir}/{baseFileName}.xlsx
     /// </summary>
     public static void WriteXlsx(
         IReadOnlyList<JudgeResult> results,
-        IReadOnlyList<string> imagePaths,
         IReadOnlyList<bool> ngFlags,
         string outputDir,
         string baseFileName)
@@ -68,33 +49,57 @@ public static class ExportWriter
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("判定結果");
 
-        // ヘッダー
-        ws.Cell(1, 1).Value = "No.";
-        ws.Cell(1, 2).Value = "サムネイル";
-        ws.Cell(1, 3).Value = "ファイル名";
-        ws.Cell(1, 4).Value = "カテゴリ";
-        ws.Cell(1, 5).Value = "信頼度";
-        ws.Cell(1, 6).Value = "NG";
-        ws.Cell(1, 7).Value = "ファイルサイズ";
-        ws.Cell(1, 8).Value = "ピクセル数";
+        // ヘッダー（CSVと同一データ + No. + サムネイル列）
+        var headers = new[]
+        {
+            "No.",              // A
+            "サムネイル",        // B（xlsx専用：判定用224×224画像）
+            "ファイル名",        // C = CSV:FileName
+            "戦略",             // D = CSV:StrategyName
+            "分類設定",          // E = CSV:CategoryConfig
+            "判定カテゴリ",       // F = CSV:JudgedCategory
+            "信頼度",            // G = CSV:Confidence
+            "CropX",            // H = CSV:CropX
+            "CropY",            // I = CSV:CropY
+            "CropWidth",        // J = CSV:CropWidth
+            "CropHeight",       // K = CSV:CropHeight
+            "Version",          // L = CSV:Version
+            "Timestamp",        // M = CSV:Timestamp
+            "モニター名",        // N = CSV:MonitorName
+            "NG",               // O = CSV:NG
+            "ファイルサイズ",     // P = CSV:FileSize
+            "ピクセル数",        // Q = CSV:OriginalWidth×OriginalHeight
+        };
+
+        for (int c = 0; c < headers.Length; c++)
+            ws.Cell(1, c + 1).Value = headers[c];
 
         // ヘッダー書式
-        var headerRow = ws.Range(1, 1, 1, 8);
+        var headerRow = ws.Range(1, 1, 1, headers.Length);
         headerRow.Style.Font.Bold = true;
         headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
         headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
         // 列幅設定
-        ws.Column(1).Width = 5;   // No.
-        ws.Column(2).Width = 12;  // サムネイル
-        ws.Column(3).Width = 30;  // ファイル名
-        ws.Column(4).Width = 15;  // カテゴリ
-        ws.Column(5).Width = 10;  // 信頼度
-        ws.Column(6).Width = 5;   // NG
-        ws.Column(7).Width = 12;  // ファイルサイズ
-        ws.Column(8).Width = 15;  // ピクセル数
+        ws.Column(1).Width = 5;    // No.
+        ws.Column(2).Width = 12;   // サムネイル
+        ws.Column(3).Width = 25;   // ファイル名
+        ws.Column(4).Width = 12;   // 戦略
+        ws.Column(5).Width = 14;   // 分類設定
+        ws.Column(6).Width = 12;   // 判定カテゴリ
+        ws.Column(7).Width = 10;   // 信頼度
+        ws.Column(8).Width = 8;    // CropX
+        ws.Column(9).Width = 8;    // CropY
+        ws.Column(10).Width = 10;  // CropWidth
+        ws.Column(11).Width = 10;  // CropHeight
+        ws.Column(12).Width = 12;  // Version
+        ws.Column(13).Width = 18;  // Timestamp
+        ws.Column(14).Width = 12;  // モニター名
+        ws.Column(15).Width = 5;   // NG
+        ws.Column(16).Width = 12;  // ファイルサイズ
+        ws.Column(17).Width = 15;  // ピクセル数
 
-        var imageRowHeight = 60.0; // サムネイル行の高さ（ポイント）
+        var imageRowHeight = 60.0;
 
         for (int i = 0; i < results.Count; i++)
         {
@@ -104,76 +109,54 @@ public static class ExportWriter
 
             ws.Row(row).Height = imageRowHeight;
 
+            // データ列（CSVと同一内容）
             ws.Cell(row, 1).Value = i + 1;
+            // B列（サムネイル）は画像埋め込みで後述
             ws.Cell(row, 3).Value = r.FileName;
-            ws.Cell(row, 4).Value = r.JudgedCategory;
-            ws.Cell(row, 5).Value = Math.Round(r.Confidence, 3);
-            ws.Cell(row, 6).Value = ng ? "NG" : "";
+            ws.Cell(row, 4).Value = r.StrategyName;
+            ws.Cell(row, 5).Value = r.CategoryConfigName;
+            ws.Cell(row, 6).Value = r.JudgedCategory;
+            ws.Cell(row, 7).Value = Math.Round(r.Confidence, 6);
+            ws.Cell(row, 8).Value = r.CropX;
+            ws.Cell(row, 9).Value = r.CropY;
+            ws.Cell(row, 10).Value = r.CropWidth;
+            ws.Cell(row, 11).Value = r.CropHeight;
+            ws.Cell(row, 12).Value = r.Version;
+            ws.Cell(row, 13).Value = r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
+            ws.Cell(row, 14).Value = "";  // MonitorName（現在未使用）
+            ws.Cell(row, 15).Value = ng ? "NG" : "";
+            ws.Cell(row, 16).Value = FormatFileSize(r.FileSize);
+            ws.Cell(row, 17).Value = $"{r.OriginalWidth}\u00d7{r.OriginalHeight}";
 
-            // ファイルサイズ・ピクセル数
-            if (i < imagePaths.Count && !string.IsNullOrEmpty(imagePaths[i]) && File.Exists(imagePaths[i]))
+            // B列：判定用224×224クロップ画像の埋め込み
+            if (r.CroppedImageJpeg.Length > 0)
             {
                 try
                 {
-                    var fi = new FileInfo(imagePaths[i]);
-                    ws.Cell(row, 7).Value = FormatFileSize(fi.Length);
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"photobox_thumb_{i}.jpg");
+                    File.WriteAllBytes(tempPath, r.CroppedImageJpeg);
 
-                    using var fs = new FileStream(imagePaths[i], FileMode.Open, FileAccess.Read);
-                    using var img = Image.FromStream(fs);
-                    ws.Cell(row, 8).Value = $"{img.Width}×{img.Height}";
-                }
-                catch { /* スキップ */ }
-            }
-
-            // サムネイル画像埋め込み
-            if (i < imagePaths.Count && !string.IsNullOrEmpty(imagePaths[i]) && File.Exists(imagePaths[i]))
-            {
-                try
-                {
-                    // 一時的にサムネイルを生成してxlsxに埋め込む
-                    using var fs = new FileStream(imagePaths[i], FileMode.Open, FileAccess.Read);
-                    using var original = Image.FromStream(fs);
-                    using var thumb = new Bitmap(80, 60);
-                    using (var g = Graphics.FromImage(thumb))
-                    {
-                        g.Clear(Color.LightGray);
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-
-                        // アスペクト比を維持してフィット
-                        float scale = Math.Min(80f / original.Width, 60f / original.Height);
-                        int sw = (int)(original.Width * scale);
-                        int sh = (int)(original.Height * scale);
-                        int sx = (80 - sw) / 2;
-                        int sy = (60 - sh) / 2;
-                        g.DrawImage(original, sx, sy, sw, sh);
-                    }
-
-                    // 一時ファイルに保存してClosedXMLに渡す
-                    var tempPath = Path.Combine(Path.GetTempPath(), $"photobox_thumb_{i}.png");
-                    thumb.Save(tempPath, System.Drawing.Imaging.ImageFormat.Png);
-
-                    var picture = ws.AddPicture(tempPath)
+                    ws.AddPicture(tempPath)
                         .MoveTo(ws.Cell(row, 2))
-                        .WithSize(80, 60);
+                        .WithSize(60, 60);
 
-                    // 一時ファイル削除
                     try { File.Delete(tempPath); } catch { }
                 }
                 catch { /* 画像埋め込み失敗時はスキップ */ }
             }
 
-            // NG行の背景色
+            // 行の背景色
             if (ng)
             {
-                ws.Range(row, 1, row, 8).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 230, 230);
+                ws.Range(row, 1, row, headers.Length).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 230, 230);
             }
             else if (r.JudgedCategory == "その他")
             {
-                ws.Range(row, 1, row, 8).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255, 230);
+                ws.Range(row, 1, row, headers.Length).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255, 230);
             }
             else
             {
-                ws.Range(row, 1, row, 8).Style.Fill.BackgroundColor = XLColor.FromArgb(230, 255, 230);
+                ws.Range(row, 1, row, headers.Length).Style.Fill.BackgroundColor = XLColor.FromArgb(230, 255, 230);
             }
         }
 

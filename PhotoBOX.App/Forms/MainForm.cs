@@ -254,12 +254,11 @@ public partial class MainForm : Form
             // F6-09: デスクトップ直下に出力
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var ngList = _results.Select(r => _ngFlags.GetValueOrDefault(r, false)).ToList();
-            var imagePathList = _results.Select(r => _imagePaths.GetValueOrDefault(r, "")).ToList();
 
             // 3点セット出力
             var csvPath = CsvWriter.Write(_results, desktopPath, baseFileName, _version, _buildDate, ngList);
-            ExportWriter.WriteImageFolder(_results, imagePathList, desktopPath, baseFileName);
-            ExportWriter.WriteXlsx(_results, imagePathList, ngList, desktopPath, baseFileName);
+            ExportWriter.WriteImageFolder(_results, desktopPath, baseFileName);
+            ExportWriter.WriteXlsx(_results, ngList, desktopPath, baseFileName);
 
             lblStatus.Text = $"出力完了: {baseFileName}";
             MessageBox.Show(
