@@ -39,8 +39,8 @@ Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: ignoreversion recurs
 Source: "publish\Models\*"; DestDir: "{app}\Models"; Flags: onlyifdoesntexist recursesubdirs createallsubdirs; Check: IsNotFullInstall
 ; Config（全インストール時は常に配置）
 Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFullInstall
-; Config（上書き・別バージョン追加時は存在しなければ配置）
-Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: onlyifdoesntexist recursesubdirs createallsubdirs; Check: IsNotFullInstall
+; Config（上書き・別バージョン追加時も常に最新版に更新）
+Source: "publish\Config\*"; DestDir: "{app}\Config"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsNotFullInstall
 
 [Icons]
 ; スタートメニューへの登録は行わない
