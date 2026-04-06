@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PhotoJudge;
 
 namespace PhotoJudge.CategoryMapping;
 
@@ -39,8 +40,8 @@ public class CategoryMapper
 {
     private readonly CategoryConfig _config;
 
-    /// <summary>Top5カテゴリ合算後の信頼度閾値（全カテゴリ共通）</summary>
-    public const float ConfidenceThreshold = 0.30f;
+    /// <summary>Top5カテゴリ合算後の信頼度閾値（全カテゴリ共通）。JudgeConfigから参照</summary>
+    public static float ConfidenceThreshold => JudgeConfig.ConfidenceThreshold;
 
     public string ConfigName => _config.ConfigName;
     public string[] Categories => _config.Categories;

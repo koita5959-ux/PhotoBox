@@ -2,7 +2,7 @@
 ; 1フォルダ複数exe方式・自動採番
 
 #define MyAppName "PhotoBOX"
-#define MyAppVersion "1.03"
+#define MyAppVersion "1.04"
 #define MyAppPublisher "koita5959-ux"
 #define MyAppExeName "PhotoBOX.App.exe"
 

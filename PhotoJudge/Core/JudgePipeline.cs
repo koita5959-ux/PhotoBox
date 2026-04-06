@@ -33,11 +33,50 @@ public class JudgeResult
     /// <summary>元画像の高さ（ピクセル）</summary>
     public required int OriginalHeight { get; init; }
 
+    /// <summary>Top1のカテゴリ名（CategoryMapper変換後）</summary>
+    public required string Top1Category { get; init; }
+
     /// <summary>Top1のクラスインデックス（記録用）</summary>
     public required int Top1ClassIndex { get; init; }
 
     /// <summary>Top1の合算前信頼度（記録用）</summary>
     public required float Top1RawScore { get; init; }
+
+    /// <summary>Top2のカテゴリ名</summary>
+    public required string Top2Category { get; init; }
+
+    /// <summary>Top2のクラスインデックス</summary>
+    public required int Top2ClassIndex { get; init; }
+
+    /// <summary>Top2の信頼度</summary>
+    public required float Top2RawScore { get; init; }
+
+    /// <summary>Top3のカテゴリ名</summary>
+    public required string Top3Category { get; init; }
+
+    /// <summary>Top3のクラスインデックス</summary>
+    public required int Top3ClassIndex { get; init; }
+
+    /// <summary>Top3の信頼度</summary>
+    public required float Top3RawScore { get; init; }
+
+    /// <summary>Top4のカテゴリ名</summary>
+    public required string Top4Category { get; init; }
+
+    /// <summary>Top4のクラスインデックス</summary>
+    public required int Top4ClassIndex { get; init; }
+
+    /// <summary>Top4の信頼度</summary>
+    public required float Top4RawScore { get; init; }
+
+    /// <summary>Top5のカテゴリ名</summary>
+    public required string Top5Category { get; init; }
+
+    /// <summary>Top5のクラスインデックス</summary>
+    public required int Top5ClassIndex { get; init; }
+
+    /// <summary>Top5の信頼度</summary>
+    public required float Top5RawScore { get; init; }
 
     /// <summary>何回目の判定か（1, 2, 3...）</summary>
     public required int JudgeRound { get; init; }
@@ -72,18 +111,16 @@ public class JudgePipeline : IDisposable
     /// <param name="strategy">切り出し戦略</param>
     /// <param name="activeCategories">有効カテゴリ（利用者がチェックしたカテゴリ名の配列）</param>
     /// <param name="judgeRound">判定ラウンド（1, 2, 3...）</param>
-    /// <summary>白黒余白比率の閾値。これ以上なら判定スキップ</summary>
-    public const float BlankRatioThreshold = 0.30f;
-
     public JudgeResult Judge(string imagePath, ICropStrategy strategy, string[] activeCategories, int judgeRound)
     {
         using var cropResult = strategy.Crop(imagePath);
 
         // 白黒余白チェック: 判定領域として信用できない画像はスキップ
         var blankRatio = CalcBlankPixelRatio(cropResult.CroppedImage);
-        var skipInference = blankRatio >= BlankRatioThreshold;
+        var skipInference = blankRatio >= JudgeConfig.BlankRatioThreshold;
 
         ResolveResult resolveResult;
+        IReadOnlyList<(int ClassIndex, float Score)>? top5Raw = null;
 
         if (skipInference)
         {
@@ -100,7 +137,22 @@ public class JudgePipeline : IDisposable
         {
             var normalized = ImageNetNormalizer.Normalize(cropResult.CroppedImage);
             var onnxResult = _classifier.Classify(normalized);
+            top5Raw = onnxResult.Top5;
             resolveResult = _mapper.Resolve(onnxResult.Top5, activeCategories);
+        }
+
+        // Top1〜5の各クラスインデックスをカテゴリ名に1対1変換（合算前の素の分類結果）
+        string top1Cat = "", top2Cat = "", top3Cat = "", top4Cat = "", top5Cat = "";
+        int top1Idx = -1, top2Idx = -1, top3Idx = -1, top4Idx = -1, top5Idx = -1;
+        float top1Scr = 0f, top2Scr = 0f, top3Scr = 0f, top4Scr = 0f, top5Scr = 0f;
+
+        if (top5Raw != null)
+        {
+            if (top5Raw.Count > 0) { top1Cat = _mapper.Resolve(top5Raw[0].ClassIndex); top1Idx = top5Raw[0].ClassIndex; top1Scr = top5Raw[0].Score; }
+            if (top5Raw.Count > 1) { top2Cat = _mapper.Resolve(top5Raw[1].ClassIndex); top2Idx = top5Raw[1].ClassIndex; top2Scr = top5Raw[1].Score; }
+            if (top5Raw.Count > 2) { top3Cat = _mapper.Resolve(top5Raw[2].ClassIndex); top3Idx = top5Raw[2].ClassIndex; top3Scr = top5Raw[2].Score; }
+            if (top5Raw.Count > 3) { top4Cat = _mapper.Resolve(top5Raw[3].ClassIndex); top4Idx = top5Raw[3].ClassIndex; top4Scr = top5Raw[3].Score; }
+            if (top5Raw.Count > 4) { top5Cat = _mapper.Resolve(top5Raw[4].ClassIndex); top5Idx = top5Raw[4].ClassIndex; top5Scr = top5Raw[4].Score; }
         }
 
         // 判定に使用した224×224画像をJPEGバイト列として保持（Export用）
@@ -128,8 +180,21 @@ public class JudgePipeline : IDisposable
             FileSize = fileSize,
             OriginalWidth = cropResult.OriginalWidth,
             OriginalHeight = cropResult.OriginalHeight,
-            Top1ClassIndex = resolveResult.Top1ClassIndex,
-            Top1RawScore = resolveResult.Top1RawScore,
+            Top1Category = top1Cat,
+            Top1ClassIndex = top1Idx,
+            Top1RawScore = top1Scr,
+            Top2Category = top2Cat,
+            Top2ClassIndex = top2Idx,
+            Top2RawScore = top2Scr,
+            Top3Category = top3Cat,
+            Top3ClassIndex = top3Idx,
+            Top3RawScore = top3Scr,
+            Top4Category = top4Cat,
+            Top4ClassIndex = top4Idx,
+            Top4RawScore = top4Scr,
+            Top5Category = top5Cat,
+            Top5ClassIndex = top5Idx,
+            Top5RawScore = top5Scr,
             JudgeRound = judgeRound
         };
     }
@@ -147,8 +212,8 @@ public class JudgePipeline : IDisposable
             for (int x = 0; x < image.Width; x++)
             {
                 var p = image[x, y];
-                if ((p.R > 245 && p.G > 245 && p.B > 245) ||
-                    (p.R < 10 && p.G < 10 && p.B < 10))
+                if ((p.R > JudgeConfig.WhiteThreshold && p.G > JudgeConfig.WhiteThreshold && p.B > JudgeConfig.WhiteThreshold) ||
+                    (p.R < JudgeConfig.BlackThreshold && p.G < JudgeConfig.BlackThreshold && p.B < JudgeConfig.BlackThreshold))
                 {
                     blankCount++;
                 }

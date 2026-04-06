@@ -47,25 +47,14 @@ public static class ExportWriter
         var headers = new[]
         {
             "No.",              // A
-            "サムネイル",        // B
-            "ファイル名",        // C
-            "戦略",             // D
-            "分類設定",          // E
-            "判定カテゴリ",       // F
-            "信頼度",            // G
-            "Top1Index",        // H (新規)
-            "Top1Score",        // I (新規)
-            "判定Round",        // J (新規)
-            "CropX",            // K
-            "CropY",            // L
-            "CropWidth",        // M
-            "CropHeight",       // N
-            "Version",          // O
-            "Timestamp",        // P
-            "モニター名",        // Q
-            "NG",               // R
-            "ファイルサイズ",     // S
-            "ピクセル数",        // T
+            "ファイル名",        // B
+            "サムネイル",        // C
+            "NG",               // D
+            "判定カテゴリ",       // E
+            "信頼度",            // F
+            "ファイルサイズ",     // G
+            "幅",               // H
+            "高さ",              // I
         };
 
         for (int c = 0; c < headers.Length; c++)
@@ -79,25 +68,14 @@ public static class ExportWriter
 
         // 列幅設定
         ws.Column(1).Width = 5;    // No.
-        ws.Column(2).Width = 12;   // サムネイル
-        ws.Column(3).Width = 25;   // ファイル名
-        ws.Column(4).Width = 12;   // 戦略
-        ws.Column(5).Width = 14;   // 分類設定
-        ws.Column(6).Width = 12;   // 判定カテゴリ
-        ws.Column(7).Width = 10;   // 信頼度
-        ws.Column(8).Width = 10;   // Top1Index
-        ws.Column(9).Width = 10;   // Top1Score
-        ws.Column(10).Width = 8;   // 判定Round
-        ws.Column(11).Width = 8;   // CropX
-        ws.Column(12).Width = 8;   // CropY
-        ws.Column(13).Width = 10;  // CropWidth
-        ws.Column(14).Width = 10;  // CropHeight
-        ws.Column(15).Width = 12;  // Version
-        ws.Column(16).Width = 18;  // Timestamp
-        ws.Column(17).Width = 12;  // モニター名
-        ws.Column(18).Width = 5;   // NG
-        ws.Column(19).Width = 12;  // ファイルサイズ
-        ws.Column(20).Width = 15;  // ピクセル数
+        ws.Column(2).Width = 25;   // ファイル名
+        ws.Column(3).Width = 12;   // サムネイル
+        ws.Column(4).Width = 5;    // NG
+        ws.Column(5).Width = 14;   // 判定カテゴリ
+        ws.Column(6).Width = 10;   // 信頼度
+        ws.Column(7).Width = 12;   // ファイルサイズ
+        ws.Column(8).Width = 8;    // 幅
+        ws.Column(9).Width = 8;    // 高さ
 
         var imageRowHeight = 60.0;
 
@@ -109,28 +87,17 @@ public static class ExportWriter
 
             ws.Row(row).Height = imageRowHeight;
 
-            ws.Cell(row, 1).Value = i + 1;
-            // B列（サムネイル）は画像埋め込みで後述
-            ws.Cell(row, 3).Value = r.FileName;
-            ws.Cell(row, 4).Value = r.StrategyName;
-            ws.Cell(row, 5).Value = r.CategoryConfigName;
-            ws.Cell(row, 6).Value = r.JudgedCategory;
-            ws.Cell(row, 7).Value = Math.Round(r.Confidence, 6);
-            ws.Cell(row, 8).Value = r.Top1ClassIndex;
-            ws.Cell(row, 9).Value = Math.Round(r.Top1RawScore, 6);
-            ws.Cell(row, 10).Value = r.JudgeRound;
-            ws.Cell(row, 11).Value = r.CropX;
-            ws.Cell(row, 12).Value = r.CropY;
-            ws.Cell(row, 13).Value = r.CropWidth;
-            ws.Cell(row, 14).Value = r.CropHeight;
-            ws.Cell(row, 15).Value = r.Version;
-            ws.Cell(row, 16).Value = r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
-            ws.Cell(row, 17).Value = "";  // MonitorName
-            ws.Cell(row, 18).Value = ng ? "NG" : "";
-            ws.Cell(row, 19).Value = FormatFileSize(r.FileSize);
-            ws.Cell(row, 20).Value = $"{r.OriginalWidth}\u00d7{r.OriginalHeight}";
+            ws.Cell(row, 1).Value = i + 1;                               // A: No.
+            ws.Cell(row, 2).Value = r.FileName;                          // B: ファイル名
+            // C列（サムネイル）は画像埋め込みで後述
+            ws.Cell(row, 4).Value = ng ? "NG" : "";                      // D: NG
+            ws.Cell(row, 5).Value = r.JudgedCategory;                    // E: 判定カテゴリ
+            ws.Cell(row, 6).Value = Math.Round(r.Confidence, 6);         // F: 信頼度
+            ws.Cell(row, 7).Value = FormatFileSize(r.FileSize);          // G: ファイルサイズ
+            ws.Cell(row, 8).Value = r.OriginalWidth;                     // H: 幅
+            ws.Cell(row, 9).Value = r.OriginalHeight;                    // I: 高さ
 
-            // B列：判定用224×224クロップ画像の埋め込み
+            // C列：判定用224×224クロップ画像の埋め込み
             if (r.CroppedImageJpeg.Length > 0)
             {
                 try
@@ -139,7 +106,7 @@ public static class ExportWriter
                     File.WriteAllBytes(tempPath, r.CroppedImageJpeg);
 
                     ws.AddPicture(tempPath)
-                        .MoveTo(ws.Cell(row, 2))
+                        .MoveTo(ws.Cell(row, 3))
                         .WithSize(60, 60);
 
                     try { File.Delete(tempPath); } catch { }
