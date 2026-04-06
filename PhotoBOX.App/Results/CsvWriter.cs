@@ -6,18 +6,11 @@ namespace PhotoBOX.App.Results;
 
 public static class CsvWriter
 {
-    private static readonly string[] BaseColumns =
+    private static readonly string[] Columns =
     [
         "FileName", "StrategyName", "CategoryConfig", "JudgedCategory",
-        "Confidence", "CropX", "CropY", "CropWidth", "CropHeight",
-        "Version", "Timestamp",
-        "FileSize", "OriginalWidth", "OriginalHeight"
-    ];
-
-    private static readonly string[] ExtendedColumns =
-    [
-        "FileName", "StrategyName", "CategoryConfig", "JudgedCategory",
-        "Confidence", "CropX", "CropY", "CropWidth", "CropHeight",
+        "Confidence", "Top1ClassIndex", "Top1RawScore", "JudgeRound",
+        "CropX", "CropY", "CropWidth", "CropHeight",
         "Version", "Timestamp", "MonitorName", "NG",
         "FileSize", "OriginalWidth", "OriginalHeight"
     ];
@@ -38,7 +31,6 @@ public static class CsvWriter
 
     /// <summary>
     /// JudgeResult のリストをCSVファイルに出力する（GUI版：ベースファイル名指定）。
-    /// F6-03/F6-09: 書き出し予定ファイル名を外部から指定。
     /// </summary>
     public static string Write(IReadOnlyList<JudgeResult> results, string outputDir, string baseFileName,
         string version, string buildDate, IReadOnlyList<bool>? ngFlags)
@@ -46,7 +38,6 @@ public static class CsvWriter
         if (results.Count == 0)
             throw new ArgumentException("結果が0件です。");
 
-        var hasExtended = ngFlags != null;
         var first = results[0];
         var fileName = $"{baseFileName}.csv";
         var filePath = Path.Combine(outputDir, fileName);
@@ -62,36 +53,36 @@ public static class CsvWriter
         sb.AppendLine($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine($"# ImageCount: {results.Count}");
 
-        sb.AppendLine(string.Join(",", hasExtended ? ExtendedColumns : BaseColumns));
+        sb.AppendLine(string.Join(",", Columns));
 
         for (int i = 0; i < results.Count; i++)
         {
             var r = results[i];
-            var baseLine = string.Join(",",
+            var ng = ngFlags != null && i < ngFlags.Count && ngFlags[i];
+
+            var line = string.Join(",",
                 Escape(r.FileName),
                 Escape(r.StrategyName),
                 Escape(r.CategoryConfigName),
                 Escape(r.JudgedCategory),
                 r.Confidence.ToString("F6", CultureInfo.InvariantCulture),
+                r.Top1ClassIndex,
+                r.Top1RawScore.ToString("F6", CultureInfo.InvariantCulture),
+                r.JudgeRound,
                 r.CropX,
                 r.CropY,
                 r.CropWidth,
                 r.CropHeight,
                 Escape(r.Version),
-                r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+                r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
+                "\"\"",  // MonitorName（未使用）
+                ng ? "true" : "false",
+                r.FileSize,
+                r.OriginalWidth,
+                r.OriginalHeight
             );
 
-            if (hasExtended)
-            {
-                var ng = ngFlags != null && i < ngFlags.Count && ngFlags[i];
-                // MonitorName列は空文字（F6-03でモニター名→ファイル名に変更のため）
-                baseLine += $",\"\",{(ng ? "true" : "false")}";
-            }
-
-            // 元ファイル情報（Base/Extended共通）
-            baseLine += $",{r.FileSize},{r.OriginalWidth},{r.OriginalHeight}";
-
-            sb.AppendLine(baseLine);
+            sb.AppendLine(line);
         }
 
         File.WriteAllText(filePath, sb.ToString(), new UTF8Encoding(true));

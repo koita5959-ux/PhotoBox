@@ -4,15 +4,12 @@ using PhotoJudge.Core;
 namespace PhotoBOX.App.Results;
 
 /// <summary>
-/// F6-09: 3点セット出力（224×224画像フォルダ、xlsx）のうちCSV以外を担当。
-/// 画像はJudgeResultが保持するクロップ済み224×224 JPEGをそのまま使用する。
-/// xlsxのデータカラムはCSVと同一（B列に判定用画像を追加）。
+/// 3点セット出力（224×224画像フォルダ、xlsx）のうちCSV以外を担当。
 /// </summary>
 public static class ExportWriter
 {
     /// <summary>
     /// 判定に使用した224×224クロップ画像をフォルダに保存する。
-    /// 出力先: {outputDir}/{baseFileName}/
     /// </summary>
     public static void WriteImageFolder(
         IReadOnlyList<JudgeResult> results,
@@ -35,8 +32,6 @@ public static class ExportWriter
 
     /// <summary>
     /// NGレポート用xlsxを生成する。
-    /// データカラムはCSVと同一、B列に判定用224×224画像を追加。
-    /// 出力先: {outputDir}/{baseFileName}.xlsx
     /// </summary>
     public static void WriteXlsx(
         IReadOnlyList<JudgeResult> results,
@@ -49,26 +44,28 @@ public static class ExportWriter
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("判定結果");
 
-        // ヘッダー（CSVと同一データ + No. + サムネイル列）
         var headers = new[]
         {
             "No.",              // A
-            "サムネイル",        // B（xlsx専用：判定用224×224画像）
-            "ファイル名",        // C = CSV:FileName
-            "戦略",             // D = CSV:StrategyName
-            "分類設定",          // E = CSV:CategoryConfig
-            "判定カテゴリ",       // F = CSV:JudgedCategory
-            "信頼度",            // G = CSV:Confidence
-            "CropX",            // H = CSV:CropX
-            "CropY",            // I = CSV:CropY
-            "CropWidth",        // J = CSV:CropWidth
-            "CropHeight",       // K = CSV:CropHeight
-            "Version",          // L = CSV:Version
-            "Timestamp",        // M = CSV:Timestamp
-            "モニター名",        // N = CSV:MonitorName
-            "NG",               // O = CSV:NG
-            "ファイルサイズ",     // P = CSV:FileSize
-            "ピクセル数",        // Q = CSV:OriginalWidth×OriginalHeight
+            "サムネイル",        // B
+            "ファイル名",        // C
+            "戦略",             // D
+            "分類設定",          // E
+            "判定カテゴリ",       // F
+            "信頼度",            // G
+            "Top1Index",        // H (新規)
+            "Top1Score",        // I (新規)
+            "判定Round",        // J (新規)
+            "CropX",            // K
+            "CropY",            // L
+            "CropWidth",        // M
+            "CropHeight",       // N
+            "Version",          // O
+            "Timestamp",        // P
+            "モニター名",        // Q
+            "NG",               // R
+            "ファイルサイズ",     // S
+            "ピクセル数",        // T
         };
 
         for (int c = 0; c < headers.Length; c++)
@@ -88,16 +85,19 @@ public static class ExportWriter
         ws.Column(5).Width = 14;   // 分類設定
         ws.Column(6).Width = 12;   // 判定カテゴリ
         ws.Column(7).Width = 10;   // 信頼度
-        ws.Column(8).Width = 8;    // CropX
-        ws.Column(9).Width = 8;    // CropY
-        ws.Column(10).Width = 10;  // CropWidth
-        ws.Column(11).Width = 10;  // CropHeight
-        ws.Column(12).Width = 12;  // Version
-        ws.Column(13).Width = 18;  // Timestamp
-        ws.Column(14).Width = 12;  // モニター名
-        ws.Column(15).Width = 5;   // NG
-        ws.Column(16).Width = 12;  // ファイルサイズ
-        ws.Column(17).Width = 15;  // ピクセル数
+        ws.Column(8).Width = 10;   // Top1Index
+        ws.Column(9).Width = 10;   // Top1Score
+        ws.Column(10).Width = 8;   // 判定Round
+        ws.Column(11).Width = 8;   // CropX
+        ws.Column(12).Width = 8;   // CropY
+        ws.Column(13).Width = 10;  // CropWidth
+        ws.Column(14).Width = 10;  // CropHeight
+        ws.Column(15).Width = 12;  // Version
+        ws.Column(16).Width = 18;  // Timestamp
+        ws.Column(17).Width = 12;  // モニター名
+        ws.Column(18).Width = 5;   // NG
+        ws.Column(19).Width = 12;  // ファイルサイズ
+        ws.Column(20).Width = 15;  // ピクセル数
 
         var imageRowHeight = 60.0;
 
@@ -109,7 +109,6 @@ public static class ExportWriter
 
             ws.Row(row).Height = imageRowHeight;
 
-            // データ列（CSVと同一内容）
             ws.Cell(row, 1).Value = i + 1;
             // B列（サムネイル）は画像埋め込みで後述
             ws.Cell(row, 3).Value = r.FileName;
@@ -117,16 +116,19 @@ public static class ExportWriter
             ws.Cell(row, 5).Value = r.CategoryConfigName;
             ws.Cell(row, 6).Value = r.JudgedCategory;
             ws.Cell(row, 7).Value = Math.Round(r.Confidence, 6);
-            ws.Cell(row, 8).Value = r.CropX;
-            ws.Cell(row, 9).Value = r.CropY;
-            ws.Cell(row, 10).Value = r.CropWidth;
-            ws.Cell(row, 11).Value = r.CropHeight;
-            ws.Cell(row, 12).Value = r.Version;
-            ws.Cell(row, 13).Value = r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
-            ws.Cell(row, 14).Value = "";  // MonitorName（現在未使用）
-            ws.Cell(row, 15).Value = ng ? "NG" : "";
-            ws.Cell(row, 16).Value = FormatFileSize(r.FileSize);
-            ws.Cell(row, 17).Value = $"{r.OriginalWidth}\u00d7{r.OriginalHeight}";
+            ws.Cell(row, 8).Value = r.Top1ClassIndex;
+            ws.Cell(row, 9).Value = Math.Round(r.Top1RawScore, 6);
+            ws.Cell(row, 10).Value = r.JudgeRound;
+            ws.Cell(row, 11).Value = r.CropX;
+            ws.Cell(row, 12).Value = r.CropY;
+            ws.Cell(row, 13).Value = r.CropWidth;
+            ws.Cell(row, 14).Value = r.CropHeight;
+            ws.Cell(row, 15).Value = r.Version;
+            ws.Cell(row, 16).Value = r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
+            ws.Cell(row, 17).Value = "";  // MonitorName
+            ws.Cell(row, 18).Value = ng ? "NG" : "";
+            ws.Cell(row, 19).Value = FormatFileSize(r.FileSize);
+            ws.Cell(row, 20).Value = $"{r.OriginalWidth}\u00d7{r.OriginalHeight}";
 
             // B列：判定用224×224クロップ画像の埋め込み
             if (r.CroppedImageJpeg.Length > 0)
@@ -160,7 +162,6 @@ public static class ExportWriter
             }
         }
 
-        // オートフィルターを適用
         ws.RangeUsed()?.SetAutoFilter();
 
         workbook.SaveAs(filePath);

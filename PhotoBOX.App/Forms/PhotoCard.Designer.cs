@@ -23,54 +23,51 @@ partial class PhotoCard
         SuspendLayout();
 
         // ── 左: 元画像プレビュー ──
-        picThumbnail.Location = new Point(5, 5);
-        picThumbnail.Size = new Size(130, 110);
+        picThumbnail.Location = new Point(4, 4);
+        picThumbnail.Size = new Size(95, 80);
         picThumbnail.SizeMode = PictureBoxSizeMode.Zoom;
         picThumbnail.BackColor = Color.LightGray;
 
         // ── 中央: 分析情報 ──
-        // カテゴリ名
-        lblCategory.Location = new Point(140, 8);
-        lblCategory.Size = new Size(130, 18);
-        lblCategory.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
+        lblCategory.Location = new Point(103, 4);
+        lblCategory.Size = new Size(100, 16);
+        lblCategory.Font = new Font(Font.FontFamily, 8.5f, FontStyle.Bold);
         lblCategory.TextAlign = ContentAlignment.MiddleLeft;
 
-        // NGチェック（カテゴリ名の右）
-        chkNg.Location = new Point(270, 8);
-        chkNg.Size = new Size(45, 18);
+        chkNg.Location = new Point(203, 4);
+        chkNg.Size = new Size(42, 16);
         chkNg.Text = "NG";
+        chkNg.Font = new Font(Font.FontFamily, 7.5f);
         chkNg.TextAlign = ContentAlignment.MiddleCenter;
 
-        // 信頼度 + ファイルサイズ（1段目）
-        lblConfidence.Location = new Point(140, 30);
-        lblConfidence.Size = new Size(175, 16);
+        lblConfidence.Location = new Point(103, 22);
+        lblConfidence.Size = new Size(140, 14);
         lblConfidence.TextAlign = ContentAlignment.MiddleLeft;
-        lblConfidence.Font = new Font(Font.FontFamily, 7.5f);
+        lblConfidence.Font = new Font(Font.FontFamily, 7f);
 
-        // ピクセル数（2段目）
-        lblPixelInfo.Location = new Point(140, 48);
-        lblPixelInfo.Size = new Size(175, 16);
+        lblPixelInfo.Location = new Point(103, 38);
+        lblPixelInfo.Size = new Size(140, 14);
         lblPixelInfo.TextAlign = ContentAlignment.MiddleLeft;
-        lblPixelInfo.Font = new Font(Font.FontFamily, 7.5f);
+        lblPixelInfo.Font = new Font(Font.FontFamily, 7f);
 
         // ── 右: クロップ判定画像（小） ──
-        picCropped.Location = new Point(320, 8);
-        picCropped.Size = new Size(55, 55);
+        picCropped.Location = new Point(248, 4);
+        picCropped.Size = new Size(48, 48);
         picCropped.SizeMode = PictureBoxSizeMode.Zoom;
         picCropped.BackColor = Color.LightGray;
         picCropped.BorderStyle = BorderStyle.FixedSingle;
 
-        // ── 下部: ファイル名（全幅） ──
-        lblFileName.Location = new Point(5, 120);
-        lblFileName.Size = new Size(375, 16);
+        // ── 下部: ファイル名 ──
+        lblFileName.Location = new Point(4, 88);
+        lblFileName.Size = new Size(292, 14);
         lblFileName.TextAlign = ContentAlignment.MiddleLeft;
-        lblFileName.Font = new Font(Font.FontFamily, 7f);
+        lblFileName.Font = new Font(Font.FontFamily, 6.5f);
         lblFileName.ForeColor = Color.DimGray;
 
         // ── PhotoCard 本体 ──
-        Size = new Size(385, 140);
-        MinimumSize = new Size(385, 140);
-        Margin = new Padding(5);
+        Size = new Size(300, 105);
+        MinimumSize = new Size(300, 105);
+        Margin = new Padding(4);
         BorderStyle = BorderStyle.FixedSingle;
 
         Controls.Add(picThumbnail);

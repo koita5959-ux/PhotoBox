@@ -29,7 +29,8 @@ public class TestRunner
         foreach (var file in files)
         {
             Console.WriteLine($"  判定中: {Path.GetFileName(file)}");
-            var result = _pipeline.Judge(file, strategy);
+            var allCategories = _pipeline.Categories.Where(c => c != "その他").ToArray();
+            var result = _pipeline.Judge(file, strategy, allCategories, 1);
             results.Add(result);
             Console.WriteLine($"    → {result.JudgedCategory} ({result.Confidence:P1})");
         }

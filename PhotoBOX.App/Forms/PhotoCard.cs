@@ -22,7 +22,7 @@ public partial class PhotoCard : UserControl
         }
     }
 
-    public JudgeResult Result { get; }
+    public JudgeResult Result { get; private set; }
 
     public event EventHandler? NgChanged;
 
@@ -31,16 +31,8 @@ public partial class PhotoCard : UserControl
         InitializeComponent();
         Result = result;
 
-        lblCategory.Text = result.JudgedCategory;
-        lblFileName.Text = result.FileName;
+        UpdateLabels(result);
 
-        // 1段目: 信頼度 + ファイルサイズ
-        var confidenceText = $"信頼度:{result.Confidence:F3}";
-        var fileSizeText = FormatFileSize(result.FileSize);
-        lblConfidence.Text = $"{confidenceText} / {fileSizeText}";
-
-        // 2段目: ピクセル数
-        lblPixelInfo.Text = $"{result.OriginalWidth}×{result.OriginalHeight}";
 
         // 元画像プレビュー（左）
         try
@@ -79,6 +71,26 @@ public partial class PhotoCard : UserControl
             UpdateBackgroundColor();
             NgChanged?.Invoke(this, EventArgs.Empty);
         };
+    }
+
+    private void UpdateLabels(JudgeResult result)
+    {
+        lblCategory.Text = result.JudgedCategory;
+        lblFileName.Text = result.FileName;
+        var confidenceText = $"信頼度:{result.Confidence:F3}";
+        var fileSizeText = FormatFileSize(result.FileSize);
+        lblConfidence.Text = $"{confidenceText} / {fileSizeText}";
+        lblPixelInfo.Text = $"{result.OriginalWidth}×{result.OriginalHeight}";
+    }
+
+    /// <summary>
+    /// 再判定時にResultを差し替え、表示を更新する。
+    /// </summary>
+    public void UpdateResult(JudgeResult newResult)
+    {
+        Result = newResult;
+        UpdateLabels(newResult);
+        UpdateBackgroundColor();
     }
 
     private static string FormatFileSize(long bytes)
